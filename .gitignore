@@ -1,0 +1,59 @@
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+*.manifest
+*.spec.bak
+
+# PyInstaller / build
+build/
+dist/
+*.exe
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Windows
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# Logs e dados locais do utilizador (fora do repo, por precaução)
+*.log
+herosaga_monitor_settings.json
+herosaga_monitor_data.json
+herosaga_mvp_timers.json
+herosaga_prices_history.json
+herosaga_watchlist.json
+herosaga_dp_mob_images/
+
+# Capturas HAR (podem conter cookies/tokens do browser)
+*.har
+
+# Debug MVP / calibração local
+data/mvp_detect_debug/
+
+# Ficheiros temporários / backups locais
+*.tmp
+*.bak
+*.backup
+.DS_Store

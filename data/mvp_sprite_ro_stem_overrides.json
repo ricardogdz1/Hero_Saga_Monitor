@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "comment": "stem = nome do .spr sem extensão. monster_id_to_stem prevalece sobre heurísticas; norm_to_stem se o normalizado do nome coincidir.",
+  "monster_id_to_stem": {
+    "20248": "joker",
+    "20222": "heart_hunter_n",
+    "20234": "time_keeper",
+    "20659": "pitaya_boss",
+    "20893": "md_tiara"
+  },
+  "norm_to_stem": {}
+}

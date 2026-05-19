@@ -46,3 +46,4 @@ C:\Users\SeuUsuario\herosaga_monitor_data.json
 - Busca por nome: `herosaga.com.br/?module=vending&action=search&item_search=NOME`
 - Histórico por ID: `herosaga.com.br/?module=item&action=view&id=ID`
 "# Hero_Saga_Monitor" 
+"# Hero_Saga_Monitor" 
