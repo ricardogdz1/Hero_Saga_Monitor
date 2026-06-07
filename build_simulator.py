@@ -52,7 +52,14 @@ _TWO_HAND_RE = re.compile(
 
 
 def default_slot_state() -> Dict[str, Any]:
-    return {"item_id": None, "item_name": "", "refine": 0, "cards": 0, "is_2h": False}
+    return {
+        "item_id": None,
+        "item_name": "",
+        "refine": 0,
+        "cards": 0,
+        "is_2h": False,
+        "item_icon_url": "",
+    }
 
 
 def default_layer_state() -> Dict[str, Dict[str, Any]]:
@@ -170,6 +177,174 @@ def min_prices_from_stores(stores: List[dict], *, only_qty_one: bool = False) ->
     return best
 
 
+REF_HP_BUNDLE = 100_000
+HP_REFERENCE_ITEM_ID = 40111  # moeda de 100.000 Hero Points (referência RMT↔HP)
+DEFAULT_HP_PER_RMT = 30.0
+
+FetchStoresFn = Callable[[int, str], Tuple[List[dict], dict]]
+
+
+def hp_per_rmt_from_pair(rmt: float, hp: float):
+    try:
+        r = float(rmt)
+        h = float(hp)
+    except (TypeError, ValueError):
+        return None
+    if r <= 0 or h <= 0:
+        return None
+    return h / r
+
+
+def rmt_for_ref_hp(rmt: float, hp: float, ref_hp: float = REF_HP_BUNDLE):
+    try:
+        r = float(rmt)
+        h = float(hp)
+        ref = float(ref_hp)
+    except (TypeError, ValueError):
+        return None
+    if r <= 0 or h <= 0 or ref <= 0:
+        return None
+    return r * (ref / h)
+
+
+def derive_hp_per_rmt_from_reference_item(min_prices: dict) -> dict:
+    """Taxa RMT↔HP a partir do menor preço RMT do item de referência (100.000 HP)."""
+    try:
+        min_rmt = float((min_prices or {}).get("rmt"))
+    except (TypeError, ValueError):
+        min_rmt = None
+    if min_rmt is None or min_rmt <= 0:
+        return {
+            "hp_per_rmt": None,
+            "rmt_per_100k_hp": None,
+            "samples": 0,
+            "source": "none",
+            "reference_item_id": HP_REFERENCE_ITEM_ID,
+        }
+    hp_per_rmt = REF_HP_BUNDLE / min_rmt
+    return {
+        "hp_per_rmt": hp_per_rmt,
+        "rmt_per_100k_hp": min_rmt,
+        "samples": 1,
+        "source": "reference_item",
+        "reference_item_id": HP_REFERENCE_ITEM_ID,
+    }
+
+
+def fetch_hp_conversion_from_market(fetch_stores: FetchStoresFn) -> dict:
+    """Consulta lojas do item ``HP_REFERENCE_ITEM_ID`` e devolve a taxa de conversão."""
+    try:
+        stores, _ = fetch_stores(HP_REFERENCE_ITEM_ID, "")
+        matched = filter_stores_slot(stores or [], 0, 0)
+        mp = min_prices_from_stores(matched, only_qty_one=True)
+        if not mp:
+            mp = min_prices_from_stores(stores or [], only_qty_one=True)
+        return derive_hp_per_rmt_from_reference_item(mp)
+    except Exception as e:
+        logger.debug("fetch_hp_conversion_from_market(%s): %s", HP_REFERENCE_ITEM_ID, e)
+        return derive_hp_per_rmt_from_reference_item({})
+
+
+def resolve_build_hp_per_rmt(fetch_stores: FetchStoresFn, saved_rate=None) -> float:
+    """Taxa efectiva: mercado (item 40111) → valor guardado → padrão."""
+    conv = fetch_hp_conversion_from_market(fetch_stores)
+    rate = conv.get("hp_per_rmt")
+    if rate is not None and rate > 0:
+        return float(rate)
+    try:
+        fallback = float(saved_rate if saved_rate is not None else DEFAULT_HP_PER_RMT)
+    except (TypeError, ValueError):
+        fallback = DEFAULT_HP_PER_RMT
+    return fallback if fallback > 0 else DEFAULT_HP_PER_RMT
+
+
+def derive_hp_per_rmt_from_pairs(pairs) -> dict:
+    """Estima taxa de mercado a partir de pares (min RMT, min HP) do mesmo item/refino.
+
+    Prioriza listagens cujo preço em HP está mais perto de ``REF_HP_BUNDLE`` (100.000 HP).
+    """
+    import math
+
+    candidates = []
+    for pair in pairs or []:
+        if not isinstance(pair, (tuple, list)) or len(pair) < 2:
+            continue
+        rate = hp_per_rmt_from_pair(pair[0], pair[1])
+        if rate is None:
+            continue
+        try:
+            hp = float(pair[1])
+        except (TypeError, ValueError):
+            continue
+        weight = 1.0 / (1.0 + abs(math.log10(max(hp, 1.0) / REF_HP_BUNDLE)))
+        r100 = rmt_for_ref_hp(pair[0], pair[1])
+        candidates.append({"rate": rate, "weight": weight, "rmt_per_100k": r100, "hp": hp, "rmt": float(pair[0])})
+
+    if not candidates:
+        return {
+            "hp_per_rmt": None,
+            "rmt_per_100k_hp": None,
+            "samples": 0,
+            "source": "none",
+        }
+
+    total_w = sum(c["weight"] for c in candidates)
+    avg_rate = sum(c["rate"] * c["weight"] for c in candidates) / total_w
+    avg_r100 = REF_HP_BUNDLE / avg_rate if avg_rate > 0 else None
+    return {
+        "hp_per_rmt": avg_rate,
+        "rmt_per_100k_hp": avg_r100,
+        "samples": len(candidates),
+        "source": "market",
+    }
+
+
+def accumulate_build_currency_totals(entries, hp_per_rmt) -> dict:
+    """Soma custos em RMT e HP, convertendo quando só existe uma moeda."""
+    try:
+        rate = float(hp_per_rmt or DEFAULT_HP_PER_RMT)
+    except (TypeError, ValueError):
+        rate = DEFAULT_HP_PER_RMT
+    if rate <= 0:
+        rate = DEFAULT_HP_PER_RMT
+
+    total_rmt = 0.0
+    total_hp = 0.0
+    slots = 0
+
+    for ent in entries or []:
+        if not isinstance(ent, dict):
+            continue
+        r = ent.get("rmt")
+        h = ent.get("hp")
+        try:
+            rv = float(r) if r is not None and r != "" else None
+        except (TypeError, ValueError):
+            rv = None
+        try:
+            hv = float(h) if h is not None and h != "" else None
+        except (TypeError, ValueError):
+            hv = None
+        if rv is not None and rv <= 0:
+            rv = None
+        if hv is not None and hv <= 0:
+            hv = None
+        if rv is None and hv is None:
+            continue
+        slots += 1
+        if rv is not None and hv is not None:
+            total_rmt += min(rv, hv / rate)
+            total_hp += min(hv, rv * rate)
+        elif rv is not None:
+            total_rmt += rv
+            total_hp += rv * rate
+        else:
+            total_hp += hv
+            total_rmt += hv / rate
+
+    return {"total_rmt": total_rmt, "total_hp": total_hp, "slots": slots}
+
+
 def item_meta_is_two_handed(meta: Optional[dict]) -> bool:
     if not meta:
         return False
@@ -248,9 +423,6 @@ def price_variation_vs_7d_mean(
     return pct, avg, len(prices)
 
 
-FetchStoresFn = Callable[[int, str], Tuple[List[dict], dict]]
-
-
 def sum_layer_totals(
     layer: Dict[str, Dict[str, Any]],
     fetch_stores: FetchStoresFn,
@@ -308,13 +480,14 @@ def total_saved_build_zeny(
 def total_saved_build_hp_equiv(
     build: dict,
     fetch_stores: FetchStoresFn,
+    *,
+    hp_per_rmt: Optional[float] = None,
 ) -> float:
-    """Soma HP (Hero Points nas lojas) + RMT convertido com ``hp_per_rmt`` da build, como na UI da simulação."""
-    try:
-        ratio = float(build.get("hp_per_rmt") or 30)
-    except (TypeError, ValueError):
-        ratio = 30.0
-    ratio = max(0.0, ratio)
+    """Soma HP (Hero Points nas lojas) + RMT convertido com taxa de mercado ou da build."""
+    if hp_per_rmt is not None:
+        ratio = max(0.0, float(hp_per_rmt))
+    else:
+        ratio = resolve_build_hp_per_rmt(fetch_stores, build.get("hp_per_rmt"))
     eq = build.get("equip") if isinstance(build.get("equip"), dict) else {}
     vis = build.get("visual") if isinstance(build.get("visual"), dict) else {}
     _z1, r1, _o1, h1, _ = sum_layer_totals(eq, fetch_stores)
@@ -356,6 +529,7 @@ def run_build_total_alerts(
     saved = [b for b in (data.get("saved") or []) if isinstance(b, dict)]
     events: List[dict] = []
     changed = False
+    market_hp_per_rmt = resolve_build_hp_per_rmt(fetch_stores, None)
     for b in saved:
         th_hp = b.get("alert_when_total_hp_equiv_below")
         th_z = b.get("alert_when_total_zeny_below")
@@ -386,7 +560,11 @@ def run_build_total_alerts(
             continue
         try:
             if alert_kind == "hp_equiv":
-                total = total_saved_build_hp_equiv(b, fetch_stores)
+                total = total_saved_build_hp_equiv(
+                    b,
+                    fetch_stores,
+                    hp_per_rmt=market_hp_per_rmt,
+                )
             else:
                 total = total_saved_build_zeny(b, fetch_stores)
         except Exception as e:
@@ -430,14 +608,14 @@ def build_email_body_build_total(ev: dict) -> str:
     kind = ev.get("alert_kind") or "zeny"
     if kind == "hp_equiv":
         return (
-            "Alerta — Herosaga Monitor (Simulação de Build)\n\n"
+            "Alerta — GDZ Monitor (Simulação de Build)\n\n"
             f"Build: {nm}\n"
             f"Custo total estimado (HP equivalente: Hero Points nas lojas + RMT convertido): {a}\n"
             f"Limiar definido: {b}\n\n"
             "O custo total caiu abaixo do valor que configurou ao guardar a build."
         )
     return (
-        "Alerta — Herosaga Monitor (Simulação de Build)\n\n"
+        "Alerta — GDZ Monitor (Simulação de Build)\n\n"
         f"Build: {nm}\n"
         f"Custo total estimado (Zeny, equip + visual, menores preços ao refino do slot): {a} Z\n"
         f"Limiar definido: {b} Z\n\n"

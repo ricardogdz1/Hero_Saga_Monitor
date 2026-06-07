@@ -151,7 +151,7 @@ class HerosagaScraper(StoreScraper):
                 return {"error": "Erro no parse HTML"}
             
             stores = self._parse_stores_table(soup)
-            card = self._parse_item_card(soup)
+            card = self._parse_item_card(soup, item_id=str(item_id))
 
             return {
                 "item_id": item_id,
@@ -165,7 +165,7 @@ class HerosagaScraper(StoreScraper):
             self.logger.error(f"❌ Erro ao obter detalhes: {str(e)}")
             return {"error": str(e)}
     
-    def _parse_item_card(self, soup: BeautifulSoup) -> Dict[str, Any]:
+    def _parse_item_card(self, soup: BeautifulSoup, item_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Extrai nome exibido, URL do ícone, descrição e peso (painel direito do site).
         """
@@ -176,11 +176,36 @@ class HerosagaScraper(StoreScraper):
             "item_card_title": None,
         }
         try:
-            img = soup.find("img", class_="item-title-icon")
-            if img and img.get("src"):
-                src = (img.get("src") or "").strip()
-                if src:
-                    out["item_icon_url"] = urljoin(f"{self.BASE_URL}/", src)
+            def _abs_icon_src(src: str) -> str:
+                return urljoin(f"{self.BASE_URL}/", (src or "").strip())
+
+            def _icon_src_ok(src: str) -> bool:
+                s = (src or "").strip().lower()
+                if not s or s.startswith("data:"):
+                    return False
+                if "divine-pride.net" in s:
+                    return False
+                return True
+
+            desc_img = soup.find("img", class_="item-description-image")
+            if desc_img:
+                src = (desc_img.get("src") or desc_img.get("data-src") or "").strip()
+                if _icon_src_ok(src):
+                    out["item_icon_url"] = _abs_icon_src(src)
+
+            if not out["item_icon_url"]:
+                img = soup.find("img", class_="item-title-icon")
+                if not img:
+                    img = soup.select_one("img.item-title-icon, img[class*='item-title-icon']")
+                if img:
+                    src = (img.get("src") or img.get("data-src") or "").strip()
+                    if _icon_src_ok(src):
+                        out["item_icon_url"] = _abs_icon_src(src)
+
+            if not out["item_icon_url"] and item_id:
+                out["item_icon_url"] = (
+                    f"{self.BASE_URL}/?module=image&action=processicon&id={item_id}"
+                )
 
             h = soup.find("h4", class_="item-description-name")
             if h:
@@ -370,14 +395,30 @@ def parse_herosaga_item_stores_table(stores_table) -> List[Dict]:
             if len(cols) < 2:
                 continue
             texts = [c.get_text(strip=True) for c in cols]
-            if use_map and nh > 0 and len(texts) == nh + 1:
+            shop_col_idx = idx.get("loja", 0) if use_map else 0
+            checkbox_extra = False
+            if use_map and nh > 0 and len(cols) == nh + 1:
                 first = texts[0] or ""
                 if len(first) <= 2 and not re.search(r"[a-zA-Z\u00c0-\u024f]", first):
                     texts = texts[1:]
+                    checkbox_extra = True
             if use_map and len(texts) < 3:
                 continue
 
-            shop_name = gv(texts, "loja", 0).strip() or "—"
+            shop_i = shop_col_idx + (1 if checkbox_extra else 0)
+            shop_col = cols[shop_i] if shop_i < len(cols) else cols[0]
+            shop_name = shop_col.get_text(strip=True) or gv(texts, "loja", 0).strip() or "—"
+            vendor_id = None
+            shop_link = shop_col.find("a", href=True)
+            if shop_link:
+                try:
+                    from services.vendor_shop import extract_vendor_id
+
+                    vendor_id = extract_vendor_id(shop_link.get("href", ""))
+                except Exception:
+                    m = re.search(r"viewshop[^\"']*id=(\d+)", shop_link.get("href", ""), re.I)
+                    if m:
+                        vendor_id = int(m.group(1))
             ref_raw = gv(texts, "ref", 1)
             cards_raw = gv(texts, "cards", 2)
             price_text = gv(texts, "valor", 3)
@@ -410,6 +451,8 @@ def parse_herosaga_item_stores_table(stores_table) -> List[Dict]:
                 "amount": quantity,
                 "sale_type": sale_type,
             }
+            if vendor_id:
+                store["vendor_id"] = vendor_id
             stores.append(store)
             log.debug(
                 "Loja linha %s: %s R:%s P:%s (%s) q:%s",
@@ -563,9 +606,9 @@ def get_herosaga_item_stores(item_id: int, *, force_refresh: bool = False) -> Di
     return scraper.get_item_details(str(item_id), force_refresh=force_refresh)
 
 
-def parse_item_card_from_soup(soup: BeautifulSoup) -> Dict[str, Any]:
+def parse_item_card_from_soup(soup: BeautifulSoup, item_id: Optional[str] = None) -> Dict[str, Any]:
     """Conveniência: metadados do card a partir de HTML já carregado."""
-    return HerosagaScraper()._parse_item_card(soup)
+    return HerosagaScraper()._parse_item_card(soup, item_id=item_id)
 
 
 if __name__ == "__main__":

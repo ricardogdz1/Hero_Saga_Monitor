@@ -73,7 +73,7 @@ def _safe_map_name(mapname: str) -> str:
 
 def fetch_url_bytes(url: str, timeout: float = 15.0) -> Optional[bytes]:
     try:
-        r = requests.get(url, timeout=timeout, headers={"User-Agent": "HerosagaMonitor/1.0"})
+        r = requests.get(url, timeout=timeout, headers={"User-Agent": "GDZMonitor/1.0"})
         if r.status_code == 200 and r.content:
             return r.content
     except Exception as e:
@@ -449,6 +449,103 @@ def summarize_monster_for_timer(data: Dict[str, Any]) -> Dict[str, Any]:
         "spawn_maps": maps,
         "respawn_seconds": resp,
         "is_mvp": is_mvp,
+    }
+
+
+def sync_mvp_respawn_from_divine_pride(
+    *,
+    api_key: str,
+    server: Optional[str] = None,
+    delay: float = 0.12,
+) -> Dict[str, Any]:
+    """
+    Actualiza respawn_seconds (maior respawnTime dos mapas na API), nomes e mapas
+    de spawn para todo o catálogo MVP e entradas de timer registadas.
+    """
+    from divine_pride_api import fetch_monster
+
+    key = (api_key or "").strip()
+    if not key:
+        return {"ok": False, "error": "Configure a chave Divine Pride em Configurações."}
+
+    srv = (server or "").strip() or None
+    catalog = list(load_mvp_catalog_cache(max_age_seconds=None) or [])
+    items = [
+        it for it in catalog
+        if isinstance(it, dict) and not mvp_catalog_entry_skipped(it) and int(it.get("id") or 0)
+    ]
+    if not items:
+        return {"ok": False, "error": "Catálogo MVP vazio."}
+
+    storage = load_mvp_storage()
+    entries = storage.get("entries") or []
+    by_mid: Dict[int, List[Dict[str, Any]]] = {}
+    for ent in entries:
+        try:
+            mid = int(ent.get("monster_id") or 0)
+        except (TypeError, ValueError):
+            continue
+        if mid:
+            by_mid.setdefault(mid, []).append(ent)
+
+    changes: List[Dict[str, Any]] = []
+    errors: List[Dict[str, Any]] = []
+    checked = 0
+
+    for it in items:
+        mid = int(it["id"])
+        old_sec = int(it.get("respawn_seconds") or 0)
+        old_name = str(it.get("name") or "")
+        try:
+            mobj = fetch_monster(mid, api_key=key, server=srv)
+        except Exception as exc:  # noqa: BLE001
+            errors.append({"id": mid, "name": old_name, "error": str(exc)[:160]})
+            continue
+
+        checked += 1
+        api_sec = max(60, default_respawn_seconds(mobj))
+        nn = monster_api_display_name(mobj)
+        maps = spawn_maps_from_monster(mobj)
+
+        if nn:
+            it["name"] = nn
+        if maps:
+            it["spawn_maps"] = list(maps)
+        it["respawn_seconds"] = api_sec
+
+        for ent in by_mid.get(mid, []):
+            prev = int(ent.get("respawn_seconds") or 0)
+            if nn:
+                ent["name"] = nn
+            if maps:
+                ent["spawn_maps"] = list(maps)
+            ent["respawn_seconds"] = api_sec
+            if prev != api_sec and not any(c.get("id") == mid for c in changes):
+                changes.append({
+                    "id": mid,
+                    "name": nn or old_name,
+                    "old_min": max(1, prev // 60) if prev else 0,
+                    "new_min": api_sec // 60,
+                })
+        if old_sec != api_sec and not any(c.get("id") == mid for c in changes):
+            changes.append({
+                "id": mid,
+                "name": nn or old_name,
+                "old_min": max(1, old_sec // 60) if old_sec else 0,
+                "new_min": api_sec // 60,
+            })
+
+        if delay > 0:
+            time.sleep(delay)
+
+    save_mvp_storage(storage)
+    save_mvp_catalog_cache(catalog, name_display_locale="en")
+    return {
+        "ok": True,
+        "checked": checked,
+        "updated": len(changes),
+        "errors": errors,
+        "changes": changes[:40],
     }
 
 
@@ -1186,6 +1283,12 @@ def _mvp_catalog_rows_to_items(rows: Any) -> List[Dict[str, Any]]:
             sm = row.get("spawn_maps")
             if isinstance(sm, list) and sm:
                 rec["spawn_maps"] = [str(x).strip() for x in sm if str(x).strip()]
+            try:
+                rs = int(row.get("respawn_seconds") or 0)
+            except (TypeError, ValueError):
+                rs = 0
+            if rs > 0:
+                rec["respawn_seconds"] = rs
             out.append(rec)
     return out
 
@@ -1277,6 +1380,12 @@ def save_mvp_catalog_cache(
         sm = x.get("spawn_maps")
         if isinstance(sm, list) and sm:
             d["spawn_maps"] = [str(s).strip() for s in sm if str(s).strip()]
+        try:
+            rs = int(x.get("respawn_seconds") or 0)
+        except (TypeError, ValueError):
+            rs = 0
+        if rs > 0:
+            d["respawn_seconds"] = rs
         mvp_out.append(d)
 
     fp = path or MVP_CATALOG_PORTABLE_FILE

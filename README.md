@@ -1,6 +1,6 @@
-# Herosaga Monitor
+# GDZ Monitor
 
-Monitor de preços e histórico de vendas do Hero Saga (herosaga.com.br)
+Ferramentas para Hero Saga (herosaga.com.br): mercado, alertas, build, timer MVP e auto loot.
 
 ## Como rodar
 
@@ -10,11 +10,11 @@ Monitor de preços e histórico de vendas do Hero Saga (herosaga.com.br)
 2. Abra o terminal na pasta do projeto
 3. Instale as dependências:
    ```
-   pip install requests matplotlib
+   pip install -r requirements.txt
    ```
 4. Rode o app:
    ```
-   python app.py
+   python web_poc/run.py
    ```
 
 ### Método 2 — Gerar o .exe (Windows)
@@ -23,7 +23,7 @@ Monitor de preços e histórico de vendas do Hero Saga (herosaga.com.br)
    - **IMPORTANTE:** marque "Add Python to PATH" na instalação
 2. Dê duplo clique em `build.bat`
 3. Aguarde (pode demorar 1-2 minutos)
-4. O executável estará em `dist/HerosagaMonitor.exe`
+4. O executável estará em `dist/GDZMonitor.exe`
 
 ## Funcionalidades
 

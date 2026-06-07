@@ -248,7 +248,7 @@ def build_email_body(alert: dict, store: dict, extra: Optional[Dict[str, Any]] =
     ttxt = _fmt_price(alert.get("price", 0))
     cond = "cair abaixo de" if alert.get("type") == "below" else "subir acima de"
     lines = [
-        "Alerta — Herosaga Monitor",
+        "Alerta — GDZ Monitor",
         "",
         f"Item: {item_name}",
         f"ID do item: {iid}" if iid else "ID do item: —",

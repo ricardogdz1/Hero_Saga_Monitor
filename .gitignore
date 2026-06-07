@@ -57,3 +57,20 @@ data/mvp_detect_debug/
 *.bak
 *.backup
 .DS_Store
+
+# Variáveis de ambiente
+.env
+
+# Bytecode Python (explícito)
+*.pyc
+*.pyo
+
+# Dados locais / cache de ícones — não versionar
+data/item_icons/
+
+# Arquivos auxiliares de imagem
+*.icc
+*.meta
+
+# Cursor
+.cursor/

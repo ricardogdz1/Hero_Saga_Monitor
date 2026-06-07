@@ -1,26 +1,26 @@
 # -*- mode: python ; coding: utf-8 -*-
 # Build (na raiz do projecto): pyinstaller HerosagaMonitor.spec
-# Inclui data/ (catálogo MVP, sprites em mvp_sprites, mapas id) no executável para uso offline.
+# Inclui data/ no executável para uso offline.
 
 import os
 
-from PyInstaller.building.datastruct import Tree
-
 block_cipher = None
 
-_root = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))
-# Resolves to project root when PyInstaller defines SPEC
-_data_tree = Tree(
-    os.path.join(_root, "data"),
-    prefix="data",
-)
+# PyInstaller injecta SPEC; __file__ não existe ao executar o .spec
+_spec = globals().get("SPEC") or os.path.abspath("HerosagaMonitor.spec")
+_root = os.path.normpath(os.path.dirname(_spec))
+
+# PyInstaller 6: lista de (pasta_origem, pasta_destino_relativa) — não usar Tree aqui
+_datas = [
+    (os.path.join(_root, "data"), "data"),
+]
 
 a = Analysis(
     ["app.py"],
     pathex=[_root],
     binaries=[],
-    datas=_data_tree,
-    hiddenimports=["cloudscraper"],
+    datas=_datas,
+    hiddenimports=["cloudscraper", "PIL", "PIL.Image", "PIL.ImageTk"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -36,7 +36,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="HerosagaMonitor",
+    name="GDZMonitor",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

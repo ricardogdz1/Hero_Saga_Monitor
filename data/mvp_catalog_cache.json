@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-05-18T01:43:29",
+  "fetched_at": "2026-06-05T21:58:47",
   "source": "https://www.divine-pride.net/database/monster",
   "mvp": [
     {
@@ -7,14 +7,16 @@
       "name": "Amon Ra",
       "spawn_maps": [
         "moc_pryd06"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 2362,
       "name": "Amon Ra (Nightmare)",
       "spawn_maps": [
         "moc_prydn2"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 1785,
@@ -25,7 +27,8 @@
         "ra_fild04",
         "ve_fild01",
         "ve_fild02"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 1039,
@@ -33,46 +36,53 @@
       "spawn_maps": [
         "gld_dun03",
         "prt_maze03"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 1874,
-      "name": "Beelzebub"
+      "name": "Beelzebub",
+      "respawn_seconds": 7200
     },
     {
       "id": 2068,
       "name": "Boitata",
       "spawn_maps": [
         "bra_dun02"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 20618,
       "name": "Bone Detardeurus",
       "spawn_maps": [
         "abyss_04"
-      ]
+      ],
+      "respawn_seconds": 10800
     },
     {
       "id": 21301,
       "name": "Burning Fang",
       "spawn_maps": [
         "oz_dun02"
-      ]
+      ],
+      "respawn_seconds": 21600
     },
     {
       "id": 20422,
       "name": "Corrupted Dark Lord",
       "spawn_maps": [
         "gl_cas01_"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 2253,
       "name": "Daehyon",
       "spawn_maps": [
         "gld2_pay"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 1272,
@@ -81,21 +91,24 @@
         "gl_chyard",
         "gl_chyard_",
         "gld_dun04_2"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 20943,
       "name": "Death Witch",
       "spawn_maps": [
         "nif_dun02"
-      ]
+      ],
+      "respawn_seconds": 10800
     },
     {
       "id": 1719,
       "name": "Detardeurus",
       "spawn_maps": [
         "abyss_03"
-      ]
+      ],
+      "respawn_seconds": 10800
     },
     {
       "id": 1046,
@@ -103,21 +116,24 @@
       "spawn_maps": [
         "gef_dun02",
         "gld_dun04"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 1389,
       "name": "Dracula",
       "spawn_maps": [
         "gef_dun01"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 1112,
       "name": "Drake",
       "spawn_maps": [
         "treasure02"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 1115,
@@ -125,162 +141,162 @@
       "spawn_maps": [
         "gld_dun01_2",
         "pay_fild10"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 1658,
       "name": "Egnigem Cenia",
       "spawn_maps": [
         "lhz_dun02"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 1766,
-      "name": "Em Angeling"
+      "name": "Em Angeling",
+      "respawn_seconds": 7200
     },
     {
       "id": 1767,
-      "name": "Em Deviling"
-    },
-    {
-      "id": 22421,
-      "name": "Awakened Judge Yortus",
-      "spawn_maps": [
-        "jor_sklf1"
-      ]
-    },
-    {
-      "id": 22422,
-      "name": "Awakened Executioner Yortus",
-      "spawn_maps": [
-        "jor_sklf2"
-      ]
+      "name": "Em Deviling",
+      "respawn_seconds": 7200
     },
     {
       "id": 1418,
       "name": "Evil Snake Lord",
       "spawn_maps": [
         "gon_dun03"
-      ]
+      ],
+      "respawn_seconds": 5650
     },
     {
       "id": 1871,
       "name": "Falling Bishop",
       "spawn_maps": [
         "abbey02"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 21950,
       "name": "Gaia Pol",
       "spawn_maps": [
         "ra_pol01"
-      ]
+      ],
+      "respawn_seconds": 60
     },
     {
       "id": 3505,
       "name": "Giant Eggring",
       "spawn_maps": [
         "lasa_dun01"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 2251,
       "name": "Gioia",
       "spawn_maps": [
         "gld2_ald"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 1768,
       "name": "Gloom Under Night",
       "spawn_maps": [
         "ra_san05"
-      ]
+      ],
+      "respawn_seconds": 18000
     },
     {
       "id": 20118,
       "name": "Goblin King",
       "spawn_maps": [
         "clock_01"
-      ]
+      ],
+      "respawn_seconds": 60
     },
     {
       "id": 1086,
       "name": "Golden Thief Bug",
       "spawn_maps": [
         "prt_sewb4"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 1885,
       "name": "Gopinich",
       "spawn_maps": [
         "mosk_dun03"
-      ]
-    },
-    {
-      "id": 22404,
-      "name": "Guide of the Dead",
-      "spawn_maps": [
-        "moc_akhet"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 1252,
       "name": "Hatii",
       "spawn_maps": [
         "xmas_fild01"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 1832,
       "name": "Ifrit",
       "spawn_maps": [
         "thor_v03"
-      ]
+      ],
+      "respawn_seconds": 39600
     },
     {
       "id": 20601,
       "name": "Jewel Ungoliant",
       "spawn_maps": [
         "ein_dun03"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 1734,
       "name": "Kiel D-01",
       "spawn_maps": [
         "kh_dun02"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 2202,
       "name": "Kraken",
       "spawn_maps": [
         "iz_dun05"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 1688,
       "name": "Lady Tanee",
       "spawn_maps": [
         "ayo_dun02"
-      ]
+      ],
+      "respawn_seconds": 25200
     },
     {
       "id": 2156,
       "name": "Leak",
       "spawn_maps": [
         "dew_dun01"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 1373,
       "name": "Lord of the Dead",
       "spawn_maps": [
         "niflxmas"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 1147,
@@ -288,7 +304,8 @@
       "spawn_maps": [
         "anthell02",
         "gld_dun02_2"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 1059,
@@ -296,7 +313,8 @@
       "spawn_maps": [
         "gld_dun02",
         "mjolnir_04"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 1150,
@@ -304,196 +322,216 @@
       "spawn_maps": [
         "gld_dun01",
         "pay_dun04"
-      ]
-    },
-    {
-      "id": 22394,
-      "name": "Nightmare Piamette",
-      "spawn_maps": [
-        "nif_fild03"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 1087,
       "name": "Orc Hero",
       "spawn_maps": [
         "gef_fild03"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 1190,
       "name": "Orc Lord",
       "spawn_maps": [
         "gef_fild10"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 1038,
       "name": "Osiris",
       "spawn_maps": [
         "moc_pryd04"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 1157,
       "name": "Pharaoh",
       "spawn_maps": [
         "in_sphinx5"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 1159,
       "name": "Phreeoni",
       "spawn_maps": [
         "moc_fild17"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 2249,
       "name": "Pyuriel",
       "spawn_maps": [
         "gld2_prt"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 2087,
       "name": "Queen Scaraba",
       "spawn_maps": [
         "dic_dun02"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 20934,
       "name": "R001-Bestia",
       "spawn_maps": [
         "sp_rudus4"
-      ]
+      ],
+      "respawn_seconds": 10800
     },
     {
       "id": 20381,
       "name": "R48-85-Bestia",
       "spawn_maps": [
         "sp_rudus2"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 21955,
       "name": "Renire",
       "spawn_maps": [
         "mjo_wst01"
-      ]
+      ],
+      "respawn_seconds": 60
     },
     {
       "id": 1623,
       "name": "RSX-0806",
       "spawn_maps": [
         "ein_dun02"
-      ]
+      ],
+      "respawn_seconds": 7500
     },
     {
       "id": 1492,
       "name": "Samurai Specter",
       "spawn_maps": [
         "ama_dun03"
-      ]
+      ],
+      "respawn_seconds": 5460
     },
     {
       "id": 21395,
       "name": "Silent Maya",
       "spawn_maps": [
         "ant_d02_i"
-      ]
+      ],
+      "respawn_seconds": 60
     },
     {
       "id": 21996,
       "name": "Snowstorm Angel",
       "spawn_maps": [
         "jor_back4"
-      ]
+      ],
+      "respawn_seconds": 21600
     },
     {
       "id": 3741,
       "name": "Spider Chariot",
       "spawn_maps": [
         "rockmi1"
-      ]
+      ],
+      "respawn_seconds": 60
     },
     {
       "id": 1251,
       "name": "Stormy Knight",
       "spawn_maps": [
         "xmas_dun02"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 1583,
       "name": "Tao Gunka",
       "spawn_maps": [
         "beach_dun"
-      ]
+      ],
+      "respawn_seconds": 18000
     },
     {
       "id": 20928,
       "name": "The One",
       "spawn_maps": [
         "amicitia2"
-      ]
+      ],
+      "respawn_seconds": 10800
     },
     {
       "id": 3074,
       "name": "Time Holder",
       "spawn_maps": [
         "c_tower3_"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 1312,
       "name": "Turtle General",
       "spawn_maps": [
         "tur_dun04"
-      ]
+      ],
+      "respawn_seconds": 3600
     },
     {
       "id": 21537,
       "name": "Ultra Limacina",
       "spawn_maps": [
         "jor_back3"
-      ]
+      ],
+      "respawn_seconds": 21600
     },
     {
       "id": 20611,
       "name": "Valkyrie Ingrid",
       "spawn_maps": [
         "odin_past"
-      ]
+      ],
+      "respawn_seconds": 60
     },
     {
       "id": 1751,
       "name": "Valkyrie Randgris",
       "spawn_maps": [
         "odin_tem03"
-      ]
+      ],
+      "respawn_seconds": 28800
     },
     {
       "id": 20610,
       "name": "Valkyrie Reginleif",
       "spawn_maps": [
         "odin_past"
-      ]
+      ],
+      "respawn_seconds": 60
     },
     {
       "id": 1685,
       "name": "Vesper",
       "spawn_maps": [
         "jupe_core"
-      ]
+      ],
+      "respawn_seconds": 7200
     },
     {
       "id": 1917,
       "name": "Wounded Morocc",
       "spawn_maps": [
         "moc_fild22"
-      ]
+      ],
+      "respawn_seconds": 43200
     }
   ],
   "name_display_locale": "en"

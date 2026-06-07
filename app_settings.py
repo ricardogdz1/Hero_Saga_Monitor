@@ -1,5 +1,5 @@
 """
-Configurações globais do Herosaga Monitor (SMTP, e-mail, início com Windows).
+Configurações globais do GDZ Monitor (SMTP, e-mail, início com Windows).
 """
 
 import json
@@ -102,7 +102,7 @@ def set_windows_autostart(enable: bool) -> Tuple[bool, str]:
         return False, "Disponível apenas no Windows."
 
     run_key = r"Software\Microsoft\Windows\CurrentVersion\Run"
-    app_name = "HerosagaMonitor"
+    app_name = "GDZMonitor"
 
     try:
         import winreg
