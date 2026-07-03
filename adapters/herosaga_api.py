@@ -1,6 +1,6 @@
 """
 Funções de API do Hero Saga (delegam em app_services).
-Mantidas aqui para ``app.py`` e serviços não repetirem parâmetros de scraper.
+Mantidas aqui para serviços e ``app_runtime`` não repetirem parâmetros de scraper.
 """
 from __future__ import annotations
 
@@ -53,6 +53,7 @@ def api_item_history(
     load_prices_history_fn: Callable,
     save_prices_history_fn: Callable,
     get_item_history_fn: Callable,
+    persist: bool = False,
     logger_instance: Optional[logging.Logger] = None,
 ):
     return app_services.api_item_history(
@@ -63,6 +64,7 @@ def api_item_history(
         load_prices_history_fn=load_prices_history_fn,
         save_prices_history_fn=save_prices_history_fn,
         get_item_history_fn=get_item_history_fn,
+        persist=persist,
         logger=logger_instance or logger,
     )
 

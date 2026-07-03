@@ -11,7 +11,138 @@ let STATE = { categories: [], total: 0 };
 let CURRENT = "home";
 let HOME_FILTER = "";
 let DRAG = null;
+const DRAG_SCROLL = { raf: 0, body: null, speed: 0 };
 let UI_THEME = "dark";
+let _discordModalResolve = null;
+let _discordConnecting = false;
+let _discordConnected = false;
+
+// ── Discord / sessão Hero Saga ─────────────────────────────
+function updateDiscordStatusDot(connected) {
+  _discordConnected = !!connected;
+  const dot = document.getElementById("discord-status-dot");
+  if (!dot) return;
+  dot.classList.remove("ok", "bad");
+  if (connected) dot.classList.add("ok");
+  else dot.classList.add("bad");
+}
+
+function showDiscordModal(message) {
+  const layer = document.getElementById("discord-auth-layer");
+  const msg = document.getElementById("discord-auth-msg");
+  const statusEl = document.getElementById("discord-auth-status");
+  if (message && msg) msg.textContent = message;
+  if (statusEl) statusEl.textContent = "";
+  if (layer) {
+    layer.classList.remove("hidden");
+    layer.setAttribute("aria-hidden", "false");
+  }
+}
+
+function hideDiscordModal() {
+  const layer = document.getElementById("discord-auth-layer");
+  if (layer) {
+    layer.classList.add("hidden");
+    layer.setAttribute("aria-hidden", "true");
+  }
+  if (_discordModalResolve) {
+    _discordModalResolve(true);
+    _discordModalResolve = null;
+  }
+}
+
+function showDiscordModalAndWait(message) {
+  showDiscordModal(message);
+  return new Promise((resolve) => {
+    _discordModalResolve = resolve;
+  });
+}
+
+function handleApiAuth(res) {
+  if (res && res.discord_auth_required) {
+    showDiscordModal(res.error || "Sua sessão Discord expirou. Conecte novamente para consultar o site.");
+    updateDiscordStatusDot(false);
+    return true;
+  }
+  return false;
+}
+
+async function connectDiscordFromModal() {
+  const btn = document.getElementById("discord-connect-btn");
+  const statusEl = document.getElementById("discord-auth-status");
+  if (_discordConnecting || !window.pywebview?.api) return;
+  _discordConnecting = true;
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = "Abrindo janela de login…";
+  try {
+    const res = await window.pywebview.api.connect_discord();
+    if (res && res.connected) {
+      if (statusEl) statusEl.textContent = (res.verify && res.verify.message) || res.message || "Conectado com sucesso!";
+      updateDiscordStatusDot(true);
+      hideDiscordModal();
+    } else {
+      if (handleApiAuth(res)) {
+        if (statusEl) statusEl.textContent = res.error || "Sessão inválida.";
+      } else if (statusEl) {
+        statusEl.textContent = (res && res.error) || "Não foi possível conectar. Tente novamente.";
+      }
+      updateDiscordStatusDot(false);
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = String(err);
+    updateDiscordStatusDot(false);
+  } finally {
+    _discordConnecting = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function verifyDiscordConnection() {
+  const btn = document.getElementById("discord-check");
+  if (!window.pywebview?.api) return;
+  if (btn) btn.disabled = true;
+  try {
+    const res = await window.pywebview.api.verify_discord_connection();
+    updateDiscordStatusDot(!!res.connected);
+    if (res.connected) {
+      toast(res.message || "Conexão com Discord OK.");
+      hideDiscordModal();
+    } else if (handleApiAuth(res)) {
+      toast("Sessão expirada — conecte o Discord.");
+    } else {
+      toast((res.error || res.message || "Falha na verificação.") + "");
+    }
+  } catch (err) {
+    toast("Erro: " + String(err));
+    updateDiscordStatusDot(false);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function initDiscordUi() {
+  const connectBtn = document.getElementById("discord-connect-btn");
+  const checkBtn = document.getElementById("discord-check");
+  if (connectBtn) connectBtn.addEventListener("click", connectDiscordFromModal);
+  if (checkBtn) checkBtn.addEventListener("click", verifyDiscordConnection);
+}
+
+async function ensureDiscordOnBoot() {
+  if (!window.pywebview?.api) return true;
+  try {
+    const status = await window.pywebview.api.get_discord_status(true);
+    updateDiscordStatusDot(!!status.connected);
+    if (!status.connected) {
+      showDiscordModal(
+        status.message ||
+          "O site Hero Saga exige login com Discord. Conecte para buscar preços, lojas e histórico."
+      );
+    }
+    return !!status.connected;
+  } catch (_) {
+    return false;
+  }
+}
 
 // ── Tema e sidebar ─────────────────────────────────────────
 function applyTheme(theme) {
@@ -74,11 +205,14 @@ const ROUTES = {
   mvp: renderMvp,
   loot: renderLoot,
   alerts: renderAlerts,
+  "drop-calc": renderDropCalc,
   config: renderConfig,
 };
 
 function go(route) {
   if (!ROUTES[route]) route = "home";
+  if (route !== "loot") closeLootPickModal();
+  if (route !== "drop-calc") closeDropMapModal();
   CURRENT = route;
   document.querySelectorAll(".nav-item").forEach((b) =>
     b.classList.toggle("active", b.dataset.route === route));
@@ -214,7 +348,98 @@ function syncMonitorButtonsForItem(itemId, monitored) {
   });
 }
 
-async function addItemToMonitor(item, btn) {
+function getMonitorCategories() {
+  const names = (STATE.categories || []).map((c) => c.name).filter(Boolean);
+  return names.length ? names : ["Gerais"];
+}
+
+let _monitorCatPicker = null;
+let _monitorCatPickerAnchor = null;
+
+function monitorCatPortal() {
+  return document.getElementById("monitor-cat-portal");
+}
+
+function closeMonitorCategoryPicker() {
+  document.removeEventListener("click", _monitorCatPickerOutside, true);
+  document.removeEventListener("keydown", _monitorCatPickerEsc, true);
+  if (_monitorCatPicker) {
+    _monitorCatPicker.remove();
+    _monitorCatPicker = null;
+  }
+  const portal = monitorCatPortal();
+  if (portal) portal.setAttribute("aria-hidden", "true");
+  if (_monitorCatPickerAnchor) {
+    _monitorCatPickerAnchor.classList.remove("monitor-pick-open");
+    _monitorCatPickerAnchor = null;
+  }
+}
+
+function _monitorCatPickerOutside(e) {
+  if (!_monitorCatPicker) return;
+  if (_monitorCatPicker.contains(e.target)) return;
+  closeMonitorCategoryPicker();
+}
+
+function _monitorCatPickerEsc(e) {
+  if (e.key === "Escape") closeMonitorCategoryPicker();
+}
+
+function positionMonitorCategoryPicker(panel, anchor) {
+  const portal = monitorCatPortal() || document.body;
+  const ar = anchor.getBoundingClientRect();
+  panel.style.visibility = "hidden";
+  portal.appendChild(panel);
+  const pr = panel.getBoundingClientRect();
+  const gap = 8;
+  let left = ar.left - pr.width - gap;
+  let top = ar.top + (ar.height - pr.height) / 2;
+  if (left < 8) left = Math.min(ar.right + gap, window.innerWidth - pr.width - 8);
+  if (top + pr.height > window.innerHeight - 8) top = window.innerHeight - pr.height - 8;
+  if (top < 8) top = 8;
+  panel.style.left = `${Math.max(8, left)}px`;
+  panel.style.top = `${top}px`;
+  panel.style.visibility = "";
+}
+
+function openMonitorCategoryPicker(item, anchorBtn) {
+  if (isItemMonitored(item.id)) return;
+  if (_monitorCatPickerAnchor === anchorBtn) {
+    closeMonitorCategoryPicker();
+    return;
+  }
+  closeMonitorCategoryPicker();
+
+  const panel = el("div", "monitor-cat-picker");
+  panel.setAttribute("role", "menu");
+  panel.appendChild(el("div", "monitor-cat-picker-title", "Escolha a categoria"));
+  const list = el("div", "monitor-cat-picker-list");
+  getMonitorCategories().forEach((name) => {
+    const opt = el("button", "monitor-cat-opt");
+    opt.type = "button";
+    opt.textContent = name;
+    opt.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      addItemToMonitor(item, anchorBtn, name);
+    });
+    list.appendChild(opt);
+  });
+  panel.appendChild(list);
+  positionMonitorCategoryPicker(panel, anchorBtn);
+  _monitorCatPicker = panel;
+  _monitorCatPickerAnchor = anchorBtn;
+  anchorBtn.classList.add("monitor-pick-open");
+  const portal = monitorCatPortal();
+  if (portal) portal.setAttribute("aria-hidden", "false");
+  requestAnimationFrame(() => {
+    document.addEventListener("click", _monitorCatPickerOutside, true);
+    document.addEventListener("keydown", _monitorCatPickerEsc, true);
+  });
+}
+
+async function addItemToMonitor(item, btn, category) {
+  closeMonitorCategoryPicker();
   if (isItemMonitored(item.id)) {
     syncMonitorButtonsForItem(item.id, true);
     return;
@@ -223,10 +448,14 @@ async function addItemToMonitor(item, btn) {
   const compact = btn.classList.contains("result-add-compact");
   btn.textContent = compact ? "…" : "Adicionando…";
   try {
-    const category = defaultMonitorCategory();
-    let payload = { ...item, category };
+    const categoryName = category || defaultMonitorCategory();
+    let payload = { ...item, category: categoryName };
     try {
       const d = await window.pywebview.api.get_item_detail(item.id);
+      if (handleApiAuth(d)) {
+        applyMonitorButtonState(btn, false);
+        return;
+      }
       if (d?.ok) {
         payload = {
           ...payload,
@@ -237,9 +466,16 @@ async function addItemToMonitor(item, btn) {
       }
     } catch (_) { /* mantém payload original */ }
     const res = await window.pywebview.api.add_item(payload);
-    if (res?.categories) STATE = res;
+    if (handleApiAuth(res)) {
+      applyMonitorButtonState(btn, false);
+      return;
+    }
+    if (res?.categories) {
+      applyHome(res);
+    }
     syncMonitorButtonsForItem(item.id, isItemMonitored(item.id));
-    updateNavBadge();
+    if (res?.added) toast(`Adicionado em ${categoryName}`);
+    else if (res?.error) toast(res.error);
   } catch (_) {
     applyMonitorButtonState(btn, isItemMonitored(item.id));
     toast("Erro ao monitorar item.");
@@ -254,7 +490,7 @@ function createMonitorButton(item, monitoredOverride) {
   if (!monitored) {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      addItemToMonitor(item, btn);
+      openMonitorCategoryPicker(item, btn);
     });
   }
   return btn;
@@ -268,7 +504,7 @@ function createMonitorButtonCompact(item) {
   if (!monitored) {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      addItemToMonitor(item, btn);
+      openMonitorCategoryPicker(item, btn);
     });
   }
   return btn;
@@ -285,10 +521,12 @@ function cardNode(item, category) {
     card.classList.add("dragging");
     e.dataTransfer.effectAllowed = "move";
     try { e.dataTransfer.setData("text/plain", String(item.id)); } catch (_) {}
+    startDragScrollListeners();
   });
   card.addEventListener("dragend", () => {
     card.classList.remove("dragging");
     DRAG = null;
+    stopDragScrollListeners();
     clearDropIndicator();
   });
 
@@ -351,6 +589,7 @@ function columnNode(cat, index) {
     if (!DRAG) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    updateDragAutoScroll(body, e.clientY);
     showDropIndicator(body, e.clientY);
   });
   body.addEventListener("drop", async (e) => {
@@ -364,6 +603,54 @@ function columnNode(cat, index) {
 
   col.appendChild(body);
   return col;
+}
+
+function stopDragAutoScroll() {
+  if (DRAG_SCROLL.raf) cancelAnimationFrame(DRAG_SCROLL.raf);
+  DRAG_SCROLL.raf = 0;
+  DRAG_SCROLL.body = null;
+  DRAG_SCROLL.speed = 0;
+}
+
+function tickDragAutoScroll() {
+  DRAG_SCROLL.raf = 0;
+  if (!DRAG || !DRAG_SCROLL.body || !DRAG_SCROLL.speed) return;
+  DRAG_SCROLL.body.scrollTop += DRAG_SCROLL.speed;
+  DRAG_SCROLL.raf = requestAnimationFrame(tickDragAutoScroll);
+}
+
+function updateDragAutoScroll(body, clientY) {
+  const r = body.getBoundingClientRect();
+  const edge = 56;
+  const maxSpeed = 16;
+  let speed = 0;
+  if (clientY < r.top + edge) {
+    speed = -maxSpeed * Math.max(0, (r.top + edge - clientY) / edge);
+  } else if (clientY > r.bottom - edge) {
+    speed = maxSpeed * Math.max(0, (clientY - (r.bottom - edge)) / edge);
+  }
+  DRAG_SCROLL.body = body;
+  DRAG_SCROLL.speed = speed;
+  if (speed && !DRAG_SCROLL.raf) DRAG_SCROLL.raf = requestAnimationFrame(tickDragAutoScroll);
+  else if (!speed) stopDragAutoScroll();
+}
+
+function onDragWheel(e) {
+  if (!DRAG) return;
+  const body = document.elementFromPoint(e.clientX, e.clientY)?.closest?.(".col-body");
+  if (!body) return;
+  body.scrollTop += e.deltaY;
+  showDropIndicator(body, e.clientY);
+  e.preventDefault();
+}
+
+function startDragScrollListeners() {
+  document.addEventListener("wheel", onDragWheel, { passive: false, capture: true });
+}
+
+function stopDragScrollListeners() {
+  document.removeEventListener("wheel", onDragWheel, { capture: true });
+  stopDragAutoScroll();
 }
 
 function cardsIn(body) { return [...body.querySelectorAll(".card:not(.dragging)")]; }
@@ -414,6 +701,7 @@ async function refreshPrices() {
   label.textContent = "Atualizando…";
   try {
     const data = await window.pywebview.api.refresh_prices();
+    if (handleApiAuth(data)) return;
     STATE = data;
     rerenderCurrent();
     const b2 = document.getElementById("refresh");
@@ -436,7 +724,9 @@ async function catalogSearch(query) {
   const q = String(query || "").trim();
   if (!q) return { ok: true, query: q, items: [], empty: true };
   try {
-    return await window.pywebview.api.search_items(q);
+    const res = await window.pywebview.api.search_items(q);
+    handleApiAuth(res);
+    return res;
   } catch (err) {
     return { ok: false, error: String(err), query: q, items: [] };
   }
@@ -551,6 +841,7 @@ function syncSearchPickLayer() {
 }
 
 function closeSearchPickModal() {
+  closeMonitorCategoryPicker();
   const stack = searchPickStack();
   if (!stack) return;
   stack.innerHTML = "";
@@ -558,9 +849,7 @@ function closeSearchPickModal() {
 }
 
 function itemIconUrl(item) {
-  if (item?.icon) return item.icon;
-  if (item?.item_icon_url) return item.item_icon_url;
-  return "";
+  return item?.icon || "";
 }
 
 function buildSearchPickCard(item) {
@@ -660,6 +949,7 @@ function openItemSelectionWindow(query) {
 }
 
 document.getElementById("search-pick-backdrop")?.addEventListener("click", closeSearchPickModal);
+document.getElementById("loot-pick-backdrop")?.addEventListener("click", closeLootPickModal);
 
 // ── Linha de item (snapshot reutilizável: Monitorados / Alertas) ──
 function snapshotRow(item, { sub, footerHtml, actions }) {
@@ -745,6 +1035,7 @@ async function renderAlerts() {
       await refreshNotifyUI();
       if (CURRENT === "alerts") {
         const fresh = await window.pywebview.api.refresh_alerts_prices();
+        if (handleApiAuth(fresh)) return;
         drawAlerts(fresh, true);
       }
     } catch (err) {
@@ -757,7 +1048,7 @@ async function renderAlerts() {
   setStatus("al-status", "atualizando preços…");
   try {
     const fresh = await window.pywebview.api.refresh_alerts_prices();
-    if (CURRENT === "alerts") drawAlerts(fresh, true);
+    if (!handleApiAuth(fresh) && CURRENT === "alerts") drawAlerts(fresh, true);
   } catch (_) { setStatus("al-status", alertStatusLabel(data.items || [])); }
 }
 
@@ -1050,7 +1341,7 @@ function emptyBaseStats() {
   (BUILD_META?.stats?.primary || []).forEach((s) => { prim[s.key] = 0; });
   (BUILD_META?.stats?.talents || []).forEach((s) => { tal[s.key] = 0; });
   if (!Object.keys(prim).length) ["STR", "AGI", "VIT", "INT", "DEX", "LUK"].forEach((k) => { prim[k] = 0; });
-  if (!Object.keys(tal).length) ["POW", "STA", "WIS", "SPL", "CON", "CRT", "CRATE"].forEach((k) => { tal[k] = 0; });
+  if (!Object.keys(tal).length) ["POW", "STA", "WIS", "SPL", "CON", "CRT"].forEach((k) => { tal[k] = 0; });
   return { primary: prim, talents: tal };
 }
 
@@ -1071,9 +1362,9 @@ function sumBuildEquipmentStats() {
     });
   });
   if (!Object.keys(out.primary).length) ["STR", "AGI", "VIT", "INT", "DEX", "LUK"].forEach((k) => { out.primary[k] = 0; });
-  if (!Object.keys(out.talents).length) ["POW", "STA", "WIS", "SPL", "CON", "CRT", "CRATE"].forEach((k) => { out.talents[k] = 0; });
+  if (!Object.keys(out.talents).length) ["POW", "STA", "WIS", "SPL", "CON", "CRT"].forEach((k) => { out.talents[k] = 0; });
   ["ATK", "MATK", "HIT", "CRIT", "DEF", "MDEF", "FLEE", "ASPD"].forEach((k) => { out.derived_attr[k] = 0; });
-  ["PATK", "SMATK", "HPLUS", "RES", "MRES"].forEach((k) => { out.derived_talent[k] = 0; });
+  ["PATK", "SMATK", "HPLUS", "CRATE", "RES", "MRES"].forEach((k) => { out.derived_talent[k] = 0; });
 
   const addLegacy = (st) => {
     if (!st || typeof st !== "object") return;
@@ -1155,25 +1446,11 @@ function readCharacterFromUIForPreview() {
   return out;
 }
 
-function talentCrateEquipBonus(eq) {
-  return (Number(eq?.talents?.CRATE) || 0) + (Number(eq?.derived_talent?.CRATE) || 0);
-}
-
-function talentCrateDef() {
-  return (BUILD_META?.stats?.talents || []).find((d) => d.key === "CRATE")
-    || { key: "CRATE", label: "C.Rate", kind: "talents" };
-}
-
-function buildTalentDerivedLeftHtml(eq, derived, baseStats) {
-  const leftKeys = ["PATK", "SMATK", "HPLUS"];
+function buildTalentDerivedLeftHtml(eq, derived) {
+  const leftKeys = ["PATK", "SMATK", "HPLUS", "CRATE"];
   const dTal = BUILD_META?.stats?.derived_talent || [];
   return dTal.filter((d) => leftKeys.includes(d.key))
-    .map((d) => buildDerivedRowHtml(d, derived.derived_talent?.[d.key])).join("")
-    + buildEditableRowHtml(
-      { ...talentCrateDef(), kind: "talents" },
-      baseStats?.talents?.CRATE,
-      talentCrateEquipBonus(eq),
-    );
+    .map((d) => buildDerivedRowHtml(d, derived.derived_talent?.[d.key])).join("");
 }
 
 function buildTalentDerivedRightHtml(eq, derived) {
@@ -1215,12 +1492,10 @@ function refreshBuildDerivedStats() {
     attrCols[1].innerHTML = dAttr.slice(half).map((d) => buildDerivedRowHtml(d, derived.derived_attr?.[d.key])).join("");
   }
   if (talCols.length >= 2) {
-    ["PATK", "SMATK", "HPLUS"].forEach((key) => {
+    ["PATK", "SMATK", "HPLUS", "CRATE"].forEach((key) => {
       const def = dTal.find((d) => d.key === key);
       patchDerivedRow(talCols[0].querySelector(`.bro-ro-row[data-key="${key}"]`), def, derived.derived_talent?.[key]);
     });
-    const crateEq = talCols[0].querySelector('.bro-edit-row[data-key="CRATE"] .bro-eq');
-    if (crateEq) crateEq.textContent = fmtStatBonus(talentCrateEquipBonus(eq));
     ["RES", "MRES"].forEach((key) => {
       const def = dTal.find((d) => d.key === key);
       patchDerivedRow(talCols[1].querySelector(`.bro-ro-row[data-key="${key}"]`), def, derived.derived_talent?.[key]);
@@ -1363,6 +1638,10 @@ function computeDerivedDisplay(character, baseStats, eq) {
       PATK: { base: flo(conT / 5) + (Number(eq.derived_talent?.PATK) || 0), bonus: 0 },
       SMATK: { base: flo(conT / 5) + (Number(eq.derived_talent?.SMATK) || 0), bonus: 0 },
       HPLUS: { base: crtT + (Number(eq.derived_talent?.HPLUS) || 0), bonus: 0 },
+      CRATE: {
+        base: flo(crtT / 3) + (Number(eq.derived_talent?.CRATE) || 0) + (Number(eq.talents?.CRATE) || 0),
+        bonus: 0,
+      },
       RES: { base: staT + (Number(eq.derived_talent?.RES) || 0), bonus: 0 },
       MRES: { base: wisT + (Number(eq.derived_talent?.MRES) || 0), bonus: 0 },
     },
@@ -1467,9 +1746,7 @@ function renderBuildStatsPanel() {
   const eq = sumBuildEquipmentStats();
   const derived = computeDerivedDisplay(BUILD.character, BUILD.base_stats, eq);
   const primDefs = (BUILD_META.stats.primary || []).map((d) => ({ ...d, kind: "primary" }));
-  const talDefs = (BUILD_META.stats.talents || [])
-    .filter((d) => d.key !== "CRATE")
-    .map((d) => ({ ...d, kind: "talents" }));
+  const talDefs = (BUILD_META.stats.talents || []).map((d) => ({ ...d, kind: "talents" }));
   const dAttr = BUILD_META.stats.derived_attr || [];
   const half = Math.ceil(dAttr.length / 2);
   const dAttrL = dAttr.slice(0, half);
@@ -1488,7 +1765,7 @@ function renderBuildStatsPanel() {
       <h3>Talentos</h3>
       <div class="bstats-ro-grid">
         <div class="bstats-editable-col">${talDefs.map((d) => buildEditableRowHtml(d, BUILD.base_stats.talents?.[d.key], eq.talents?.[d.key])).join("")}</div>
-        <div class="bstats-derived-col">${buildTalentDerivedLeftHtml(eq, derived, BUILD.base_stats)}</div>
+        <div class="bstats-derived-col">${buildTalentDerivedLeftHtml(eq, derived)}</div>
         <div class="bstats-derived-col">${buildTalentDerivedRightHtml(eq, derived)}</div>
       </div>
       <p class="bstats-footnote">Fórmulas IRO simplificadas · ATQ base da arma vem do slot equipado (mão direita)</p>
@@ -2255,7 +2532,50 @@ async function buildAutoSave() {
 // ── Auto Loot ───────────────────────────────────────────────
 let LOOT = { groups: [] };
 let LOOT_RESULTS = [];
-let LOOT_TARGET = null;
+let LOOT_CHIP_FEEDBACK = {};
+let LOOT_SEARCH_QUERY = "";
+let LOOT_PICK_SELECTIONS = {};
+
+function lootEnsureSelections(itemId) {
+  const key = String(itemId);
+  if (!LOOT_PICK_SELECTIONS[key]) LOOT_PICK_SELECTIONS[key] = new Set();
+  return LOOT_PICK_SELECTIONS[key];
+}
+
+function lootPruneSelections(itemId) {
+  const selected = lootEnsureSelections(itemId);
+  for (const groupNum of [...selected]) {
+    if (lootGroupPickState(groupNum, itemId) !== "available") selected.delete(groupNum);
+  }
+}
+
+function lootPickLayer() {
+  return document.getElementById("loot-pick-layer");
+}
+
+function lootPickStack() {
+  return document.getElementById("loot-pick-stack");
+}
+
+function syncLootPickLayer() {
+  const layer = lootPickLayer();
+  const stack = lootPickStack();
+  if (!layer || !stack) return;
+  const open = stack.children.length > 0;
+  layer.classList.toggle("open", open);
+  layer.setAttribute("aria-hidden", open ? "false" : "true");
+}
+
+function closeLootPickModal() {
+  const stack = lootPickStack();
+  if (!stack) return;
+  stack.innerHTML = "";
+  LOOT_RESULTS = [];
+  LOOT_CHIP_FEEDBACK = {};
+  LOOT_SEARCH_QUERY = "";
+  LOOT_PICK_SELECTIONS = {};
+  syncLootPickLayer();
+}
 
 async function renderLoot() {
   head().innerHTML = `<div class="ph-title"><h2>Auto Loot</h2><p>Monte grupos @alootid2 e copie comandos com 1 clique</p></div>`;
@@ -2267,9 +2587,8 @@ async function renderLoot() {
           <input id="loot-q" type="text" placeholder="Nome, um ID ou vários IDs separados por vírgula (ex.: 522, 2610, 2613)…" autocomplete="off" />
         </div>
         <button id="loot-go" class="lbtn success">Buscar</button>
-        <label class="loot-target">Adicionar na lista <select id="loot-target"></select></label>
       </div>
-      <div id="loot-chips" class="loot-chips"></div>
+      <p class="loot-hint">A busca abre uma janela para marcar as listas de cada item e usar <strong>Incluir todos</strong>. Feche com × ou clicando fora.</p>
     </div>
     <div id="loot-board" class="loot-board"><div class="sp-state"><div class="spinner"></div>Carregando listas…</div></div>`;
 
@@ -2278,55 +2597,316 @@ async function renderLoot() {
   document.getElementById("loot-go").addEventListener("click", lootSearch);
 
   LOOT = await window.pywebview.api.loot_get();
-  drawLootTargets();
   drawLootBoard();
 }
 
-function drawLootTargets() {
-  const sel = document.getElementById("loot-target");
-  if (!sel) return;
-  const groups = LOOT.groups || [];
-  sel.innerHTML = groups.map((g) => `<option value="${g.number}">Lista ${g.number} — ${escapeHtml(g.name)}</option>`).join("");
-  if (LOOT_TARGET && groups.some((g) => g.number === LOOT_TARGET)) sel.value = String(LOOT_TARGET);
-  else LOOT_TARGET = groups.length ? groups[0].number : null;
-}
-
 async function lootSearch() {
-  const q = document.getElementById("loot-q").value.trim();
-  const out = document.getElementById("loot-chips");
-  if (!q) { out.innerHTML = ""; return; }
-  out.innerHTML = '<div class="loot-state"><div class="spinner"></div>Buscando…</div>';
+  const q = document.getElementById("loot-q")?.value.trim();
+  if (!q) return;
+  openLootSearchModal(q);
   try {
     const res = await window.pywebview.api.loot_search(q);
-    if (!res.ok) { out.innerHTML = `<div class="loot-state err">Erro: ${escapeHtml(res.error || "")}</div>`; return; }
+    if (handleApiAuth(res)) { closeLootPickModal(); return; }
+    const modal = lootPickStack()?.firstElementChild;
+    if (!modal) return;
+    if (!res.ok) {
+      renderLootPickModal(modal, q, { ok: false, error: res.error || "", items: [] });
+      return;
+    }
     LOOT_RESULTS = res.items || [];
-    drawLootChips();
+    renderLootPickModal(modal, q, { ok: true, items: LOOT_RESULTS });
   } catch (err) {
-    out.innerHTML = `<div class="loot-state err">Erro: ${escapeHtml(String(err))}</div>`;
+    const modal = lootPickStack()?.firstElementChild;
+    if (modal) renderLootPickModal(modal, q, { ok: false, error: String(err), items: [] });
   }
 }
 
-function drawLootChips() {
-  const out = document.getElementById("loot-chips");
-  if (!LOOT_RESULTS.length) { out.innerHTML = '<div class="loot-state">Nenhum item encontrado.</div>'; return; }
-  out.innerHTML = "";
-  LOOT_RESULTS.forEach((it) => {
-    const chip = el("div", "loot-chip");
-    chip.title = "Adicionar à lista selecionada";
-    chip.innerHTML = `${it.icon ? `<img src="${it.icon}" alt="">` : '<span class="lc-ph">?</span>'}<span class="lc-nm">${escapeHtml(it.name)} (${it.id})</span><span class="lc-add">+</span>`;
-    chip.addEventListener("click", () => lootAdd(it));
-    out.appendChild(chip);
-  });
+function openLootSearchModal(query) {
+  const layer = lootPickLayer();
+  const stack = lootPickStack();
+  if (!layer || !stack) return;
+
+  LOOT_SEARCH_QUERY = query;
+  LOOT_CHIP_FEEDBACK = {};
+  LOOT_PICK_SELECTIONS = {};
+  stack.innerHTML = "";
+
+  const modal = document.createElement("div");
+  modal.className = "vendor-shop-modal search-pick-modal loot-pick-modal";
+  modal.innerHTML = `
+    <div class="vshop-head">
+      <div class="vshop-meta">
+        <h3>Resultados para: ${escapeHtml(query)}</h3>
+        <div class="vshop-sub loot-pick-sub">Buscando…</div>
+      </div>
+      <button type="button" class="vshop-close loot-pick-close" aria-label="Fechar">×</button>
+    </div>
+    <div class="vshop-body search-pick-body loot-pick-body">
+      <div class="vshop-state"><div class="spinner"></div>Buscando itens…</div>
+    </div>`;
+
+  stack.appendChild(modal);
+  syncLootPickLayer();
+  modal.querySelector(".loot-pick-close")?.addEventListener("click", closeLootPickModal);
 }
 
-async function lootAdd(it) {
-  const sel = document.getElementById("loot-target");
-  const target = sel ? Number(sel.value) : LOOT_TARGET;
-  if (!target) return;
-  const res = await window.pywebview.api.loot_add(target, it);
-  if (!res.ok && res.error) toast(res.error);
-  else toast(`Adicionado à Lista ${target}`);
-  LOOT = res; drawLootTargets(); drawLootBoard();
+function lootPickSubText(count) {
+  if (!count) return "Nenhum item encontrado";
+  return `${count} ${count === 1 ? "item encontrado" : "itens encontrados"} · marque as listas de cada item e clique em Incluir todos`;
+}
+
+function renderLootPickModal(modalEl, query, res) {
+  const subEl = modalEl.querySelector(".loot-pick-sub");
+  const bodyEl = modalEl.querySelector(".loot-pick-body");
+  if (!bodyEl) return;
+
+  if (!res.ok) {
+    if (subEl) subEl.textContent = "Erro na busca";
+    bodyEl.innerHTML = `<div class="vshop-state err">${escapeHtml(res.error || "Não foi possível buscar.")}</div>`;
+    return;
+  }
+
+  const items = res.items || [];
+  if (subEl) subEl.textContent = lootPickSubText(items.length);
+
+  if (!items.length) {
+    bodyEl.innerHTML = `<div class="vshop-state search-pick-empty">
+      <div>Nenhum item encontrado para «${escapeHtml(query)}».</div>
+      <div class="search-pick-empty-hint">Tente um nome diferente ou busque pelo ID.</div>
+    </div>`;
+    return;
+  }
+
+  bodyEl.innerHTML = "";
+  bodyEl.appendChild(buildLootPickBody(items));
+}
+
+function buildLootPickBody(items) {
+  const wrap = el("div", "loot-pick-wrap");
+  wrap.appendChild(buildLootPickList(items));
+
+  const foot = el("div", "loot-pick-foot");
+  foot.appendChild(el("div", "loot-pick-summary", "Marque as listas em cada item e confirme abaixo."));
+  const btn = el("button", "result-add loot-include-all-btn", "Incluir todos");
+  btn.type = "button";
+  btn.title = "Incluir todos os itens nas listas marcadas";
+  btn.addEventListener("click", lootIncludeAll);
+  foot.appendChild(btn);
+  wrap.appendChild(foot);
+  return wrap;
+}
+
+function buildLootPickList(items) {
+  const list = el("div", "loot-pick-list");
+  items.forEach((it) => list.appendChild(lootResultCard(it)));
+  return list;
+}
+
+function drawLootPickList() {
+  const bodyEl = lootPickStack()?.querySelector(".loot-pick-body");
+  if (!bodyEl || !LOOT_RESULTS.length) return;
+  bodyEl.innerHTML = "";
+  bodyEl.appendChild(buildLootPickBody(LOOT_RESULTS));
+  const subEl = lootPickStack()?.querySelector(".loot-pick-sub");
+  if (subEl) subEl.textContent = lootPickSubText(LOOT_RESULTS.length);
+}
+
+function lootGroupPickState(groupNum, itemId) {
+  const g = (LOOT.groups || []).find((x) => x.number === groupNum);
+  if (!g) return "missing";
+  const max = LOOT.max_items || 10;
+  const items = g.items || [];
+  if (items.some((x) => x.id === itemId)) return "in-list";
+  if (items.length >= max) return "full";
+  return "available";
+}
+
+function lootResultCard(it) {
+  const card = el("div", "loot-pick-card");
+  card.dataset.itemId = String(it.id);
+
+  const top = el("div", "loot-pick-top");
+  const main = el("div", "search-pick-main");
+  const thumb = el("div", "search-pick-thumb");
+  if (it.icon) {
+    const img = el("img");
+    img.src = it.icon;
+    img.alt = it.name || "Item";
+    img.loading = "lazy";
+    thumb.appendChild(img);
+  } else {
+    thumb.appendChild(el("span", "lc-ph", "?"));
+  }
+  const info = el("div", "search-pick-info");
+  info.appendChild(el("div", "search-pick-name", escapeHtml(it.name || "Item")));
+  info.appendChild(el("div", "search-pick-id", `ID ${it.id}`));
+  main.appendChild(thumb);
+  main.appendChild(info);
+  top.appendChild(main);
+  card.appendChild(top);
+
+  const feedback = el("div", "lc-feedback");
+  const picksRow = el("div", "lc-picks-row");
+  picksRow.appendChild(el("span", "lc-picks-lbl", "Listas"));
+  const picks = el("div", "lc-picks");
+  lootPruneSelections(it.id);
+  const selected = lootEnsureSelections(it.id);
+
+  (LOOT.groups || []).forEach((g) => {
+    const st = lootGroupPickState(g.number, it.id);
+    const pill = el("button", "lc-pick");
+    pill.type = "button";
+    pill.dataset.group = String(g.number);
+    pill.textContent = String(g.number);
+    pill.title = `Lista ${g.number} — ${g.name}`;
+
+    if (st === "in-list") {
+      pill.classList.add("in-list");
+      pill.disabled = true;
+      pill.textContent = `✓${g.number}`;
+      pill.title = `Já está na Lista ${g.number} (${g.name})`;
+    } else if (st === "full") {
+      pill.classList.add("full");
+      pill.disabled = true;
+      pill.title = `Lista ${g.number} cheia (10 itens) — ${g.name}`;
+    } else {
+      if (selected.has(g.number)) pill.classList.add("selected");
+      pill.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (pill.classList.toggle("selected")) selected.add(g.number);
+        else selected.delete(g.number);
+        feedback.textContent = "";
+        feedback.className = "lc-feedback";
+      });
+    }
+    picks.appendChild(pill);
+  });
+  picksRow.appendChild(picks);
+  card.appendChild(picksRow);
+  card.appendChild(feedback);
+
+  const pending = LOOT_CHIP_FEEDBACK[it.id];
+  if (pending) {
+    lootShowChipFeedback(feedback, card, pending.kind, pending.message, false);
+    delete LOOT_CHIP_FEEDBACK[it.id];
+  }
+
+  return card;
+}
+
+function lootShowChipFeedback(feedback, card, kind, message, remember = true) {
+  if (!feedback) return;
+  feedback.textContent = message;
+  feedback.className = `lc-feedback show ${kind}`;
+  card.classList.remove("lc-flash-ok", "lc-flash-warn", "lc-flash-err");
+  if (kind === "ok") card.classList.add("lc-flash-ok");
+  else if (kind === "warn") card.classList.add("lc-flash-warn");
+  else if (kind === "err") card.classList.add("lc-flash-err");
+  clearTimeout(feedback._fadeTimer);
+  feedback._fadeTimer = setTimeout(() => {
+    feedback.classList.remove("show");
+    card.classList.remove("lc-flash-ok", "lc-flash-warn", "lc-flash-err");
+    if (remember && card.dataset.itemId) delete LOOT_CHIP_FEEDBACK[Number(card.dataset.itemId)];
+  }, 5200);
+  if (remember && card.dataset.itemId) {
+    LOOT_CHIP_FEEDBACK[Number(card.dataset.itemId)] = { kind, message };
+  }
+}
+
+async function lootAddItemToLists(it, targets) {
+  const added = [];
+  const full = [];
+  const dupes = [];
+
+  for (const groupNum of targets) {
+    const st = lootGroupPickState(groupNum, it.id);
+    if (st === "full") { full.push(groupNum); continue; }
+    if (st === "in-list") { dupes.push(groupNum); continue; }
+    const res = await window.pywebview.api.loot_add(groupNum, it);
+    LOOT = res;
+    if (res.ok) added.push(groupNum);
+    else if (res.reason === "full") full.push(groupNum);
+    else if (res.reason === "duplicate") dupes.push(groupNum);
+  }
+
+  return { added, full, dupes };
+}
+
+function lootItemFeedback(it, { added, full, dupes }) {
+  const parts = [];
+  if (added.length) parts.push(`incluído em ${added.map((n) => `Lista ${n}`).join(", ")}`);
+  if (full.length) parts.push(`${full.map((n) => `Lista ${n} cheia`).join("; ")}`);
+  if (dupes.length) parts.push(`já estava em ${dupes.map((n) => `Lista ${n}`).join(", ")}`);
+
+  const label = `«${it.name}»`;
+  let kind = "err";
+  let message = `${label}: ${parts.join("; ") || "não foi possível incluir"}.`;
+  if (added.length && !full.length && !dupes.length) {
+    kind = "ok";
+    message = `${label}: ${parts.join("; ")}.`;
+  } else if (added.length) {
+    kind = "warn";
+    message = `${label}: ${parts.join("; ")}.`;
+  }
+  return { kind, message, hadSuccess: added.length > 0 };
+}
+
+function lootSetPickSummary(text, kind) {
+  const summary = lootPickStack()?.querySelector(".loot-pick-summary");
+  if (!summary) return;
+  summary.textContent = text;
+  summary.className = "loot-pick-summary" + (kind ? ` ${kind}` : "");
+}
+
+async function lootIncludeAll() {
+  const btn = lootPickStack()?.querySelector(".loot-include-all-btn");
+  if (!LOOT_RESULTS.length) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = "Incluindo…"; }
+  lootSetPickSummary("Processando inclusões…");
+
+  let itemsOk = 0;
+  let itemsPartial = 0;
+  let itemsFail = 0;
+  let itemsNoList = 0;
+  let totalAdds = 0;
+
+  for (const it of LOOT_RESULTS) {
+    lootPruneSelections(it.id);
+    const targets = [...lootEnsureSelections(it.id)];
+    if (!targets.length) {
+      LOOT_CHIP_FEEDBACK[it.id] = { kind: "err", message: `«${it.name}»: nenhuma lista marcada.` };
+      itemsNoList++;
+      continue;
+    }
+
+    const result = await lootAddItemToLists(it, targets);
+    const fb = lootItemFeedback(it, result);
+    LOOT_CHIP_FEEDBACK[it.id] = { kind: fb.kind, message: fb.message };
+    totalAdds += result.added.length;
+    if (fb.kind === "ok") itemsOk++;
+    else if (fb.kind === "warn") itemsPartial++;
+    else itemsFail++;
+  }
+
+  drawLootBoard();
+  drawLootPickList();
+
+  const parts = [];
+  if (totalAdds) parts.push(`${totalAdds} inclusão(ões) realizada(s)`);
+  if (itemsOk) parts.push(`${itemsOk} item(ns) incluído(s) com sucesso`);
+  if (itemsPartial) parts.push(`${itemsPartial} com avisos`);
+  if (itemsFail) parts.push(`${itemsFail} sem inclusão`);
+  if (itemsNoList) parts.push(`${itemsNoList} sem lista marcada`);
+
+  let summaryKind = "";
+  if (totalAdds && !itemsFail && !itemsNoList && !itemsPartial) summaryKind = "ok";
+  else if (totalAdds) summaryKind = "warn";
+  else summaryKind = "err";
+
+  lootSetPickSummary(parts.join(" · ") || "Nenhuma inclusão realizada.", summaryKind);
+
+  if (btn) { btn.disabled = false; btn.textContent = "Incluir todos"; }
 }
 
 function drawLootBoard() {
@@ -2337,7 +2917,7 @@ function drawLootBoard() {
   const ghost = el("div", "loot-card loot-ghost");
   if ((LOOT.groups || []).length < (LOOT.max_groups || 9)) {
     ghost.innerHTML = '<div class="lg-plus">+</div><div>Nova lista</div>';
-    ghost.addEventListener("click", async () => { LOOT = await window.pywebview.api.loot_add_group(); drawLootTargets(); drawLootBoard(); });
+    ghost.addEventListener("click", async () => { LOOT = await window.pywebview.api.loot_add_group(); drawLootBoard(); });
   } else {
     ghost.innerHTML = '<div class="lg-lim">Limite de 9 listas</div>';
   }
@@ -2393,7 +2973,7 @@ function lootCard(g) {
     if (!(await modalConfirm(`Excluir a lista «${g.name}» (${cnt} item(ns))?`))) return;
     const res = await window.pywebview.api.loot_delete_group(g.number);
     if (!res.ok && res.error) { toast(res.error); return; }
-    LOOT = res; drawLootTargets(); drawLootBoard();
+    LOOT = res; drawLootBoard();
   });
   foot.appendChild(del);
   card.appendChild(foot);
@@ -2404,7 +2984,7 @@ async function lootRename(g, nameEl) {
   const newName = await modalPrompt("Renomear lista", g.name);
   if (!newName) return;
   LOOT = await window.pywebview.api.loot_rename(g.number, newName);
-  drawLootTargets(); drawLootBoard();
+  drawLootBoard();
 }
 
 async function copyLoot(btn, cmd, original) {
@@ -2450,7 +3030,7 @@ function mvpDeathToBR(iso) {
   if (!s) return "";
   const norm = s.replace("T", " ").slice(0, 16);
   const m = norm.match(/^(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2})/);
-  if (m) return `${m[2]}/${m[3]}/${m[1]} ${m[4]}:${m[5]}`;
+  if (m) return `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`;
   if (/^\d{2}\/\d{2}\/\d{4}/.test(norm)) return norm.slice(0, 16);
   return norm;
 }
@@ -3046,30 +3626,59 @@ function placeholder(title, msg, icon) {
 
 // ── Drawer de detalhe ──────────────────────────────────────
 function closeDetail() {
+  closeMonitorCategoryPicker();
   _drawerId = null;
   _histData = null;
   _histCur = null;
+  _histUserPickedCur = false;
+  _histPeriod = "30d";
+  _histDisplayLimit = 10;
   document.getElementById("drawer").classList.remove("open");
   if (!_notifyDrawerOpen) document.getElementById("overlay").classList.add("hidden");
 }
 const COLOR = { zeny: "#fbbf24", rmt: "#c084fc", hero_points: "#f472b6" };
 
 function priceChart(points, currencyKey) {
-  if (!points || points.length < 2) return '<div class="chart-empty">Histórico insuficiente para o gráfico.</div>';
-  const prices = points.map((p) => p.price);
-  const min = Math.min(...prices), max = Math.max(...prices);
-  const range = max - min || 1;
-  const W = 100, H = 42;
-  const stepX = W / (points.length - 1);
-  const coords = points.map((p, i) => `${(i * stepX).toFixed(2)},${(H - ((p.price - min) / range) * H).toFixed(2)}`);
+  if (!points || !points.length) return '<div class="chart-empty">Sem dados para o gráfico.</div>';
+  const pts = points.length === 1 ? [points[0], { ...points[0] }] : points;
+  const prices = pts.map((p) => Number(p.price) || 0);
+  let min = Math.min(...prices);
+  let max = Math.max(...prices);
+  let range = max - min;
+  const mid = (min + max) / 2;
+
+  // Preços iguais (ou quase) colapsam o eixo Y e a linha some no fundo do card.
+  if (range === 0 || (mid > 0 && range / mid < 0.002)) {
+    const pad = Math.max(Math.abs(mid) * 0.1, mid > 0 ? mid * 0.05 : 1, 1);
+    min = mid - pad;
+    max = mid + pad;
+  } else {
+    const pad = range * 0.12;
+    min -= pad;
+    max += pad;
+  }
+  range = max - min || 1;
+
+  const W = 100;
+  const H = 42;
+  const yPad = 4;
+  const plotH = H - yPad * 2;
+  const yFor = (price) => {
+    const t = (price - min) / range;
+    return yPad + (1 - Math.min(1, Math.max(0, t))) * plotH;
+  };
+
+  const stepX = pts.length > 1 ? W / (pts.length - 1) : W;
+  const coords = pts.map((p, i) => `${(i * stepX).toFixed(2)},${yFor(Number(p.price) || 0).toFixed(2)}`);
   const color = COLOR[currencyKey] || COLOR.zeny;
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-    <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+  const gradId = `cg-${currencyKey}`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
       <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
     </linearGradient></defs>
-    <polygon points="0,${H} ${coords.join(" ")} ${W},${H}" fill="url(#cg)"/>
-    <polyline points="${coords.join(" ")}" fill="none" stroke="${color}" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+    <polygon points="0,${H} ${coords.join(" ")} ${W},${H}" fill="url(#${gradId})"/>
+    <polyline points="${coords.join(" ")}" fill="none" stroke="${color}" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>
   </svg>`;
 }
 
@@ -3256,6 +3865,7 @@ async function openVendorShop(vendorId, shopHint) {
   try {
     const data = await window.pywebview.api.get_vendor_shop(vid);
     if (!stack.contains(modal)) return;
+    if (handleApiAuth(data)) return;
     if (!data.ok) {
       modal.innerHTML = `
         <div class="vshop-head">
@@ -3300,6 +3910,744 @@ function bindVendorStoreRows(container) {
 
 document.getElementById("vendor-shop-backdrop")?.addEventListener("click", closeTopVendorShopModal);
 
+// ── Calculadora de Drop ────────────────────────────────────
+let DROP_BUFF_CATALOG = null;
+let DROP_MAP_LIST = null;
+let DROP_STATE = { buffs: {}, rep_levels: {}, pet_grades: {}, last_map_id: "" };
+let DROP_ACTIVE_MAP = null;
+const DROP_ITEM_META_BY_NORM = {};
+const DROP_ITEM_META_BY_ID = {};
+let DROP_ITEM_META_READY = false;
+let _dropSaveTimer = 0;
+
+function normalizeDropItemName(name) {
+  return String(name || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getDropItemMeta(row) {
+  const nome = typeof row === "string" ? row : row?.nome;
+  const hintId = typeof row === "object" ? Number(row?.item_id || 0) : 0;
+  if (hintId > 0 && DROP_ITEM_META_BY_ID[hintId]) return DROP_ITEM_META_BY_ID[hintId];
+  const norm = normalizeDropItemName(nome);
+  if (norm && DROP_ITEM_META_BY_NORM[norm]) return DROP_ITEM_META_BY_NORM[norm];
+  if (hintId > 0) return { item_id: hintId, icon: "" };
+  return { item_id: 0, icon: "" };
+}
+
+async function ensureDropItemMetaCatalog() {
+  if (DROP_ITEM_META_READY) return true;
+  try {
+    const res = await window.pywebview.api.drop_calc_get_item_meta();
+    if (handleApiAuth(res)) return false;
+    if (!res?.ok) return false;
+    Object.assign(DROP_ITEM_META_BY_NORM, res.by_norm || {});
+    for (const [id, meta] of Object.entries(res.by_id || {})) {
+      const iid = Number(id);
+      if (iid > 0) DROP_ITEM_META_BY_ID[iid] = meta;
+    }
+    DROP_ITEM_META_READY = true;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const DROP_CTX_GROUP_MAPS = new Set(["cheffenia", "tumba_da_honra", "trilha_do_heroi"]);
+const DROP_CTX_ORDER_DEFAULT = ["Normal", "Intermediate", "Hard", "Extreme"];
+const DROP_CTX_ORDERS = {
+  cheffenia: DROP_CTX_ORDER_DEFAULT,
+  tumba_da_honra: DROP_CTX_ORDER_DEFAULT,
+  trilha_do_heroi: ["Normal", "Intermediate", "Hard", "Extreme", "Unreal", "Savage", "Elemental"],
+};
+const DROP_FLOOR_CHANCE_MAPS = new Set(["trilha_do_heroi"]);
+
+function dropCtxOrderForMap(mapId) {
+  return DROP_CTX_ORDERS[mapId] || DROP_CTX_ORDER_DEFAULT;
+}
+
+function normalizeDropContexto(raw, secao = "") {
+  const tryMatch = (text) => {
+    const low = String(text || "").trim().toLowerCase();
+    if (!low) return "";
+    if (low === "normal" || low.startsWith("normal")) return "Normal";
+    if (low === "intermediate" || low.startsWith("intermediate")) return "Intermediate";
+    if (low === "hard" || low.startsWith("hard")) return "Hard";
+    if (low === "extreme" || low.startsWith("extreme")) return "Extreme";
+    if (low === "unreal" || low.startsWith("unreal")) return "Unreal";
+    if (low === "savage" || low.startsWith("savage")) return "Savage";
+    if (low === "elemental" || low.startsWith("elemental")) return "Elemental";
+    if (low === "advanced" || low.startsWith("advanced")) return "Advanced";
+    return "";
+  };
+  return tryMatch(raw) || tryMatch(secao) || String(raw || "").trim();
+}
+
+function enrichDropRowsForMap(rows, mapId) {
+  return rows.map((r) => ({
+    ...r,
+    contexto: normalizeDropContexto(r.contexto, r.secao),
+  }));
+}
+
+function groupDropRowsByContexto(rows, mapId = "") {
+  const order = dropCtxOrderForMap(mapId);
+  const buckets = Object.fromEntries(order.map((c) => [c, []]));
+  const extras = [];
+  for (const r of rows) {
+    const ctx = r.contexto || "";
+    if (buckets[ctx]) buckets[ctx].push(r);
+    else extras.push(r);
+  }
+  const out = order
+    .filter((c) => buckets[c].length)
+    .map((c) => ({ contexto: c, rows: buckets[c] }));
+  if (extras.length) out.push({ contexto: "Outros", rows: extras });
+  return out;
+}
+
+function dropMapLayer() { return document.getElementById("drop-map-layer"); }
+function dropMapStack() { return document.getElementById("drop-map-stack"); }
+
+function syncDropMapLayer() {
+  const layer = dropMapLayer();
+  const stack = dropMapStack();
+  if (!layer || !stack) return;
+  const open = stack.children.length > 0;
+  layer.classList.toggle("open", open);
+  layer.setAttribute("aria-hidden", open ? "false" : "true");
+}
+
+function closeDropMapModal() {
+  const stack = dropMapStack();
+  if (!stack) return;
+  stack.innerHTML = "";
+  DROP_ACTIVE_MAP = null;
+  syncDropMapLayer();
+}
+
+function showDropMapPickerModal() {
+  const stack = dropMapStack();
+  if (!stack || !DROP_MAP_LIST?.length) return;
+  stack.innerHTML = "";
+  const modal = document.createElement("div");
+  modal.className = "vendor-shop-modal drop-map-modal";
+  stack.appendChild(modal);
+  renderDropMapPickerModal(modal, DROP_MAP_LIST);
+  syncDropMapLayer();
+}
+
+function closeDropMapDetail() {
+  DROP_ACTIVE_MAP = null;
+  if (DROP_MAP_LIST?.length) {
+    showDropMapPickerModal();
+    refreshDropBonusSummary("", "");
+    return;
+  }
+  closeDropMapModal();
+}
+
+function closeTopDropMapModal() {
+  const stack = dropMapStack();
+  if (!stack?.lastElementChild) return;
+  if (stack.querySelector(".drop-map-detail-modal")) {
+    closeDropMapDetail();
+    return;
+  }
+  closeDropMapModal();
+}
+
+function scheduleDropStateSave() {
+  clearTimeout(_dropSaveTimer);
+  _dropSaveTimer = setTimeout(async () => {
+    try {
+      await window.pywebview.api.drop_calc_save_state(DROP_STATE);
+    } catch (_) { /* ignora */ }
+  }, 350);
+}
+
+function dropRepLevel(track) {
+  return Number(DROP_STATE.rep_levels?.[track] || 0);
+}
+
+function dropPetGradeLevel(petId) {
+  return Number(DROP_STATE.pet_grades?.[petId] || 0);
+}
+
+function computePetEffectiveBonus(basePct, gradeLevel, grades) {
+  const row = (grades || []).find((t) => Number(t.level) === Number(gradeLevel));
+  const mult = Number(row?.multiplier_pct || 0);
+  const eff = Number(basePct || 0) * (1 + mult / 100);
+  return eff % 1 === 0 ? eff : Math.round(eff * 10) / 10;
+}
+
+function fmtDropBonusPct(v) {
+  const n = Number(v || 0);
+  return n % 1 === 0 ? String(n) : n.toFixed(1);
+}
+
+function dropBuffOn(buffId) {
+  return !!DROP_STATE.buffs?.[buffId];
+}
+
+function dropBuffMetaById() {
+  const out = {};
+  for (const g of DROP_BUFF_CATALOG?.grupos || []) {
+    for (const b of g.buffs || []) {
+      if (b?.id) out[b.id] = b;
+    }
+  }
+  return out;
+}
+
+/** Buffs a desmarcar ao ativar outro (grupos exclusivos, blocks/blocked_by). */
+function dropBuffsToDeselectWhenEnabling(buffId) {
+  const byId = dropBuffMetaById();
+  const buff = byId[buffId];
+  if (!buff) return [];
+  const out = new Set();
+  const group = String(buff.exclusive_group || "");
+  if (group && group !== "pet") {
+    for (const [id, row] of Object.entries(byId)) {
+      if (id !== buffId && String(row.exclusive_group || "") === group) out.add(id);
+    }
+  }
+  for (const blocked of buff.blocks || []) out.add(String(blocked));
+  for (const blocker of buff.blocked_by || []) out.add(String(blocker));
+  for (const row of Object.values(byId)) {
+    if ((row.blocks || []).includes(buffId)) out.add(String(row.id));
+  }
+  return [...out];
+}
+
+function syncDropToggleBuffCards(root) {
+  root.querySelectorAll(".drop-buff-card[data-buff-id]:not([data-tier]):not([data-pet])").forEach((card) => {
+    card.classList.toggle("on", !!DROP_STATE.buffs?.[card.dataset.buffId]);
+  });
+}
+
+let _dropBonusCache = { key: "", res: null };
+
+async function refreshDropBonusSummary(mapId = "", contexto = "") {
+  const mid = mapId || (DROP_ACTIVE_MAP?.id || "");
+  const key = JSON.stringify({
+    b: DROP_STATE.buffs,
+    r: DROP_STATE.rep_levels,
+    p: DROP_STATE.pet_grades,
+    m: mid,
+    c: contexto,
+  });
+  if (_dropBonusCache.key === key && _dropBonusCache.res) {
+    updateDropTotalDisplay(_dropBonusCache.res);
+    return _dropBonusCache.res;
+  }
+  const res = await window.pywebview.api.drop_calc_compute(
+    0,
+    DROP_STATE.buffs || {},
+    DROP_STATE.rep_levels || {},
+    DROP_STATE.pet_grades || {},
+    mid,
+    contexto,
+  );
+  if (handleApiAuth(res)) return null;
+  if (res?.ok) {
+    _dropBonusCache = { key, res };
+    updateDropTotalDisplay(res);
+    return res;
+  }
+  return null;
+}
+
+async function refreshDropMapIfOpen() {
+  if (!DROP_ACTIVE_MAP?.rows?.length) return;
+  const ctxHint = DROP_ACTIVE_MAP.rows.find((r) => r.contexto)?.contexto || "";
+  await refreshDropBonusSummary(DROP_ACTIVE_MAP.id, ctxHint);
+  await rerenderDropMapTable();
+}
+
+function updateDropTotalDisplay(bonusRes) {
+  const el = document.getElementById("drop-total-pct");
+  const capEl = document.getElementById("drop-cap-note");
+  if (!el) return;
+  const eff = Number(bonusRes?.bonus_effective_pct || 0);
+  const raw = Number(bonusRes?.bonus_raw_pct || 0);
+  el.textContent = `+${eff % 1 ? eff.toFixed(1) : eff}%`;
+  if (capEl) {
+    if (bonusRes?.capped) {
+      capEl.hidden = false;
+      capEl.textContent = `CAP ${bonusRes.cap_pct}% ativo (bônus bruto ${raw % 1 ? raw.toFixed(1) : raw}% limitado)`;
+    } else {
+      capEl.hidden = true;
+      capEl.textContent = "";
+    }
+  }
+  if (DROP_ACTIVE_MAP) rerenderDropMapTable();
+}
+
+function dropBuffCardHtml(buff, groupId) {
+  const bid = buff.id;
+  const track = buff.grade_track ? "" : buff.tier_track;
+  const gradeTrack = buff.grade_track;
+  let active = dropBuffOn(bid);
+  let badge = "";
+  let extraAttrs = "";
+  let tierSelect = "";
+
+  if (gradeTrack) {
+    const lv = dropPetGradeLevel(bid);
+    const eff = computePetEffectiveBonus(buff.bonus_pct, lv, buff.grades);
+    badge = `+${fmtDropBonusPct(eff)}%`;
+    extraAttrs = 'data-pet="1"';
+    tierSelect = `
+    <select class="drop-tier-select drop-pet-grade-select" data-pet-id="${escapeHtml(bid)}" aria-label="Grade ${escapeHtml(buff.nome)}">
+      ${(buff.grades || []).map((t) =>
+        `<option value="${t.level}" ${Number(t.level) === lv ? "selected" : ""}>${escapeHtml(t.label || ("Grade " + (t.grade || t.level)))}</option>`
+      ).join("")}
+    </select>`;
+  } else if (track) {
+    const lv = dropRepLevel(track);
+    active = lv > 0;
+    const tier = (buff.tiers || []).find((t) => Number(t.level) === lv);
+    badge = tier ? `+${tier.bonus_pct}%` : "+0%";
+    extraAttrs = 'data-tier="1"';
+    tierSelect = `
+    <select class="drop-tier-select" data-track="${escapeHtml(track)}" aria-label="Nível ${escapeHtml(buff.nome)}">
+      ${(buff.tiers || []).map((t) =>
+        `<option value="${t.level}" ${Number(t.level) === dropRepLevel(track) ? "selected" : ""}>${escapeHtml(t.label || ("Nv " + t.level))}</option>`
+      ).join("")}
+    </select>`;
+  } else {
+    badge = `+${buff.bonus_pct}%`;
+  }
+
+  return `<button type="button" class="drop-buff-card ${active ? "on" : ""}" data-buff-id="${escapeHtml(bid)}" data-group="${escapeHtml(groupId)}" ${extraAttrs}>
+    <span class="drop-buff-icon">${buff.icon ? `<img src="${buff.icon}" alt="">` : ""}</span>
+    <span class="drop-buff-name">${escapeHtml(buff.nome)}</span>
+    <span class="drop-buff-badge">${badge}</span>
+    ${tierSelect}
+  </button>`;
+}
+
+function bindDropBuffCards(root) {
+  root.querySelectorAll(".drop-buff-card[data-buff-id]:not([data-tier]):not([data-pet])").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.buffId;
+      DROP_STATE.buffs = DROP_STATE.buffs || {};
+      const turningOn = !DROP_STATE.buffs[id];
+      if (turningOn) {
+        for (const otherId of dropBuffsToDeselectWhenEnabling(id)) {
+          DROP_STATE.buffs[otherId] = false;
+        }
+        DROP_STATE.buffs[id] = true;
+      } else {
+        DROP_STATE.buffs[id] = false;
+      }
+      syncDropToggleBuffCards(root);
+      _dropBonusCache = { key: "", res: null };
+      scheduleDropStateSave();
+      refreshDropBonusSummary();
+      refreshDropMapIfOpen();
+    });
+  });
+  root.querySelectorAll(".drop-buff-card[data-pet]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      if (e.target.closest(".drop-pet-grade-select")) return;
+      const id = btn.dataset.buffId;
+      const group = btn.dataset.group;
+      const petIds = (DROP_BUFF_CATALOG?.grupos || [])
+        .find((g) => g.id === group)?.buffs?.map((b) => b.id) || [];
+      DROP_STATE.buffs = DROP_STATE.buffs || {};
+      const turningOn = !DROP_STATE.buffs[id];
+      for (const pid of petIds) DROP_STATE.buffs[pid] = false;
+      if (turningOn) DROP_STATE.buffs[id] = true;
+      root.querySelectorAll(`.drop-buff-card[data-pet][data-group="${CSS.escape(group)}"]`).forEach((card) => {
+        card.classList.toggle("on", !!DROP_STATE.buffs[card.dataset.buffId]);
+      });
+      _dropBonusCache = { key: "", res: null };
+      scheduleDropStateSave();
+      refreshDropBonusSummary();
+      refreshDropMapIfOpen();
+    });
+  });
+  root.querySelectorAll(".drop-tier-select:not(.drop-pet-grade-select)").forEach((sel) => {
+    sel.addEventListener("click", (e) => e.stopPropagation());
+    sel.addEventListener("mousedown", (e) => e.stopPropagation());
+    sel.addEventListener("change", () => {
+      const track = sel.dataset.track;
+      DROP_STATE.rep_levels = DROP_STATE.rep_levels || {};
+      DROP_STATE.rep_levels[track] = Number(sel.value || 0);
+      const card = sel.closest(".drop-buff-card");
+      if (card) card.classList.toggle("on", Number(sel.value) > 0);
+      const tier = (DROP_BUFF_CATALOG?.grupos || [])
+        .flatMap((g) => g.buffs || [])
+        .find((b) => b.tier_track === track);
+      const trow = (tier?.tiers || []).find((t) => Number(t.level) === Number(sel.value));
+      const badge = card?.querySelector(".drop-buff-badge");
+      if (badge && trow) badge.textContent = `+${trow.bonus_pct}%`;
+      _dropBonusCache = { key: "", res: null };
+      scheduleDropStateSave();
+      refreshDropBonusSummary();
+      refreshDropMapIfOpen();
+    });
+  });
+  root.querySelectorAll(".drop-pet-grade-select").forEach((sel) => {
+    sel.addEventListener("click", (e) => e.stopPropagation());
+    sel.addEventListener("mousedown", (e) => e.stopPropagation());
+    sel.addEventListener("change", () => {
+      const petId = sel.dataset.petId;
+      DROP_STATE.pet_grades = DROP_STATE.pet_grades || {};
+      DROP_STATE.pet_grades[petId] = Number(sel.value || 0);
+      const card = sel.closest(".drop-buff-card");
+      const buff = (DROP_BUFF_CATALOG?.grupos || [])
+        .flatMap((g) => g.buffs || [])
+        .find((b) => b.id === petId);
+      const eff = computePetEffectiveBonus(buff?.bonus_pct, Number(sel.value), buff?.grades);
+      const badge = card?.querySelector(".drop-buff-badge");
+      if (badge) badge.textContent = `+${fmtDropBonusPct(eff)}%`;
+      _dropBonusCache = { key: "", res: null };
+      scheduleDropStateSave();
+      refreshDropBonusSummary();
+      refreshDropMapIfOpen();
+    });
+  });
+}
+
+async function renderDropCalc() {
+  head().innerHTML = `<div class="ph-title"><h2>Calculadora de Drop</h2><p>Selecione buffs e abra um mapa para ver chances ajustadas</p></div>`;
+  view().innerHTML = `
+    <div class="drop-calc-page">
+      <div class="drop-total-panel">
+        <div class="drop-total-label">Bônus total de drop</div>
+        <div class="drop-total-value" id="drop-total-pct">+0%</div>
+        <div class="drop-cap-note" id="drop-cap-note" hidden></div>
+      </div>
+      <div id="drop-buff-groups" class="drop-buff-groups"><div class="sp-state"><div class="spinner"></div>Carregando buffs…</div></div>
+      <div class="drop-map-footer">
+        <button type="button" class="lbtn success" id="drop-pick-map">Escolher Mapa</button>
+      </div>
+    </div>`;
+
+  document.getElementById("drop-pick-map")?.addEventListener("click", openDropMapPicker);
+
+  try {
+    const [catRes, stRes] = await Promise.all([
+      window.pywebview.api.drop_calc_get_buff_catalog(),
+      window.pywebview.api.drop_calc_get_state(),
+      ensureDropItemMetaCatalog(),
+    ]);
+    if (handleApiAuth(catRes) || handleApiAuth(stRes)) return;
+    if (stRes?.ok && stRes.state) {
+      DROP_STATE = {
+        buffs: stRes.state.buffs || {},
+        rep_levels: stRes.state.rep_levels || {},
+        pet_grades: stRes.state.pet_grades || {},
+        last_map_id: stRes.state.last_map_id || "",
+      };
+    }
+    if (!catRes?.ok) {
+      document.getElementById("drop-buff-groups").innerHTML =
+        `<div class="sp-state err">${escapeHtml(catRes?.error || "Erro ao carregar buffs")}</div>`;
+      return;
+    }
+    DROP_BUFF_CATALOG = catRes;
+    const host = document.getElementById("drop-buff-groups");
+    host.innerHTML = (catRes.grupos || []).map((g) => {
+      const gridClass = g.id === "pet" ? "drop-buff-grid drop-buff-grid-pets" : "drop-buff-grid";
+      return `
+      <section class="drop-buff-section">
+        <h3 class="drop-buff-section-title">${escapeHtml(g.label || g.id)}</h3>
+        <div class="${gridClass}">${(g.buffs || []).map((b) => dropBuffCardHtml(b, g.id)).join("")}</div>
+      </section>`;
+    }).join("");
+    bindDropBuffCards(host);
+    await refreshDropBonusSummary();
+  } catch (err) {
+    document.getElementById("drop-buff-groups").innerHTML =
+      `<div class="sp-state err">${escapeHtml(String(err))}</div>`;
+  }
+}
+
+function renderDropMapPickerModal(modalEl, conteudos) {
+  const rows = (conteudos || []).map((c) =>
+    `<button type="button" class="drop-map-pick-row" data-map-id="${escapeHtml(c.id)}">
+      <span class="drop-map-pick-name">${escapeHtml(c.nome || c.id)}</span>
+    </button>`
+  ).join("");
+  modalEl.innerHTML = `
+    <div class="vshop-head">
+      <div class="vshop-meta"><h3>Escolher Mapa</h3><div class="vshop-sub">${conteudos.length} conteúdos</div></div>
+      <button type="button" class="vshop-close drop-map-close" aria-label="Fechar">×</button>
+    </div>
+    <div class="vshop-body">
+      <div class="drop-map-pick-list">${rows || `<div class="vshop-state">Nenhum mapa disponível.</div>`}</div>
+    </div>`;
+  modalEl.querySelector(".drop-map-close")?.addEventListener("click", closeDropMapModal);
+  modalEl.querySelectorAll(".drop-map-pick-row").forEach((row) => {
+    row.addEventListener("click", () => openDropMapDetail(row.dataset.mapId));
+  });
+}
+
+async function openDropMapPicker() {
+  const layer = dropMapLayer();
+  const stack = dropMapStack();
+  if (!layer || !stack) return;
+  stack.innerHTML = "";
+  const modal = document.createElement("div");
+  modal.className = "vendor-shop-modal drop-map-modal";
+  modal.innerHTML = `<div class="vshop-head"><div class="vshop-meta"><h3>Escolher Mapa</h3></div>
+    <button type="button" class="vshop-close drop-map-close" aria-label="Fechar">×</button></div>
+    <div class="vshop-body"><div class="vshop-state"><div class="spinner"></div>Carregando mapas…</div></div>`;
+  stack.appendChild(modal);
+  syncDropMapLayer();
+  modal.querySelector(".drop-map-close")?.addEventListener("click", closeDropMapModal);
+
+  try {
+    const res = await window.pywebview.api.drop_calc_get_catalog();
+    if (handleApiAuth(res)) { closeDropMapModal(); return; }
+    if (!res?.ok) {
+      modal.querySelector(".vshop-body").innerHTML =
+        `<div class="vshop-state err">${escapeHtml(res?.error || "Erro")}</div>`;
+      return;
+    }
+    DROP_MAP_LIST = res.conteudos || [];
+    renderDropMapPickerModal(modal, DROP_MAP_LIST);
+  } catch (err) {
+    modal.querySelector(".vshop-body").innerHTML =
+      `<div class="vshop-state err">${escapeHtml(String(err))}</div>`;
+  }
+}
+
+function flattenDropItems(mapa) {
+  const rows = [];
+  for (const sec of mapa?.secoes || []) {
+    const titulo = sec.titulo || sec.secao || "Drops";
+    for (const it of sec.itens || []) {
+      const chancesPorAndar = it.chances_por_andar || null;
+      const quantidadesPorAndar = it.quantidades_por_andar || null;
+      let chancePct = Number(it.chance_pct);
+      if (!Number.isFinite(chancePct)) {
+        chancePct = 0;
+        if (chancesPorAndar) {
+          const vals = Object.values(chancesPorAndar).filter((v) => v != null && Number.isFinite(Number(v)));
+          if (vals.length) chancePct = Number(vals[0]);
+        } else if (quantidadesPorAndar) {
+          chancePct = 100;
+        }
+      }
+      rows.push({
+        secao: titulo,
+        nome: it.nome || "—",
+        contexto: it.contexto || "",
+        chance_pct: chancePct,
+        chances_por_andar: chancesPorAndar,
+        quantidades_por_andar: quantidadesPorAndar,
+        item_id: Number(it.item_id || 0) || 0,
+        extra: it.extra || null,
+      });
+    }
+  }
+  return rows;
+}
+
+function dropRowHasFloorChances(row) {
+  return !!(row?.chances_por_andar && Object.keys(row.chances_por_andar).length);
+}
+
+function dropAndarLabel(andar) {
+  return String(andar || "").replace(/\s+/g, " ").trim();
+}
+
+function formatDropChanceCell(row) {
+  const ca = row.chances_por_andar;
+  const qa = row.quantidades_por_andar;
+  if (ca && Object.keys(ca).length) {
+    const lines = Object.entries(ca).map(([andar, pct]) => {
+      if (qa?.[andar] != null) {
+        return `<span class="drop-floor-chance"><span class="drop-floor-label">${escapeHtml(dropAndarLabel(andar))}</span> ${qa[andar]}x</span>`;
+      }
+      if (pct != null) {
+        return `<span class="drop-floor-chance"><span class="drop-floor-label">${escapeHtml(dropAndarLabel(andar))}</span> ${escapeHtml(dropPctFmt(pct))}</span>`;
+      }
+      return "";
+    }).filter(Boolean);
+    if (lines.length) return `<div class="drop-floor-chances">${lines.join("")}</div>`;
+  }
+  return escapeHtml(dropPctFmt(row.chance_pct));
+}
+
+function dropPctFmt(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "—";
+  if (n >= 1) return (n % 1 ? n.toFixed(2) : String(n)) + "%";
+  if (n >= 0.01) return n.toFixed(2) + "%";
+  return n.toFixed(4) + "%";
+}
+
+function dropFinalTitle(calc, row) {
+  const parts = [];
+  if (calc?.capped && row?.contexto) parts.push(`CAP bônus ${calc.cap_pct}% (${row.contexto})`);
+  if (calc?.item_capped && calc?.item_chance_cap_pct != null) {
+    parts.push(`CAP item ${calc.item_chance_cap_pct}%`);
+  }
+  if (calc?.chance_max_capped) parts.push("CAP 100%");
+  return parts.join(" · ");
+}
+
+function renderDropMapItemRow(r, { showSecao = false, floorChances = false } = {}) {
+  const meta = getDropItemMeta(r);
+  const detailCol = showSecao
+    ? `<td class="drop-secao-cell">${escapeHtml(r.secao || "—")}</td>`
+    : `<td>${escapeHtml(r.contexto || "—")}</td>`;
+  const chanceCell = floorChances || dropRowHasFloorChances(r)
+    ? formatDropChanceCell(r)
+    : escapeHtml(dropPctFmt(r.chance_pct));
+  const iconHtml = meta.icon
+    ? `<img src="${meta.icon}" alt="" class="drop-item-icon">`
+    : `<span class="vshop-muted">—</span>`;
+  return `
+    <tr data-row-key="${escapeHtml(r.key)}" data-contexto="${escapeHtml(r.contexto || "")}">
+      <td class="drop-icon-cell"><span class="drop-icon-slot">${iconHtml}</span></td>
+      <td>${escapeHtml(r.nome)}</td>
+      <td class="drop-id-cell">${meta.item_id ? String(meta.item_id) : "—"}</td>
+      ${detailCol}
+      <td class="drop-chance-cell">${chanceCell}</td>
+      <td class="drop-final-pct">…</td>
+    </tr>`;
+}
+
+function renderDropMapTableRows(rows, mapId) {
+  const grouped = DROP_CTX_GROUP_MAPS.has(mapId);
+  const floorChances = DROP_FLOOR_CHANCE_MAPS.has(mapId);
+  if (!grouped) return rows.map((r) => renderDropMapItemRow(r, { floorChances })).join("");
+
+  return groupDropRowsByContexto(rows, mapId).map((g) => `
+    <tr class="drop-ctx-divider"><td colspan="6"><span class="drop-ctx-label">${escapeHtml(g.contexto.toUpperCase())}</span></td></tr>
+    ${g.rows.map((r) => renderDropMapItemRow(r, { showSecao: true, floorChances })).join("")}
+  `).join("");
+}
+
+async function applyDropBuffCell(tr, row, mapId) {
+  const finCell = tr?.querySelector(".drop-final-pct");
+  if (!finCell) return;
+
+  const ca = row.chances_por_andar;
+  const qa = row.quantidades_por_andar;
+  if (ca && Object.keys(ca).length) {
+    const lines = [];
+    let lastTip = "";
+    for (const [andar, pct] of Object.entries(ca)) {
+      if (qa?.[andar] != null) {
+        lines.push(`<span class="drop-floor-chance"><span class="drop-floor-label">${escapeHtml(dropAndarLabel(andar))}</span> ${qa[andar]}x</span>`);
+        continue;
+      }
+      if (pct == null) continue;
+      const calc = await dropComputeRow({ ...row, chance_pct: Number(pct) }, mapId);
+      if (calc?.ok) {
+        lines.push(`<span class="drop-floor-chance"><span class="drop-floor-label">${escapeHtml(dropAndarLabel(andar))}</span> ${escapeHtml(dropPctFmt(calc.final_pct))}</span>`);
+        lastTip = dropFinalTitle(calc, row);
+      }
+    }
+    finCell.innerHTML = lines.length
+      ? `<div class="drop-floor-chances">${lines.join("")}</div>`
+      : "—";
+    finCell.title = lastTip;
+    return;
+  }
+
+  const calc = await dropComputeRow(row, mapId);
+  if (calc?.ok) {
+    finCell.textContent = dropPctFmt(calc.final_pct);
+    finCell.title = dropFinalTitle(calc, row);
+  }
+}
+
+async function dropComputeRow(row, mapId) {
+  return window.pywebview.api.drop_calc_compute(
+    row.chance_pct,
+    DROP_STATE.buffs || {},
+    DROP_STATE.rep_levels || {},
+    DROP_STATE.pet_grades || {},
+    mapId,
+    row.contexto || "",
+    row.nome || "",
+    row.secao || "",
+  );
+}
+
+async function rerenderDropMapTable() {
+  const tbody = document.getElementById("drop-map-tbody");
+  if (!tbody || !DROP_ACTIVE_MAP?.rows) return;
+  const mapId = DROP_ACTIVE_MAP.id;
+  for (const row of DROP_ACTIVE_MAP.rows) {
+    const tr = tbody.querySelector(`tr[data-row-key="${CSS.escape(row.key)}"]`);
+    if (!tr) continue;
+    await applyDropBuffCell(tr, row, mapId);
+  }
+}
+
+async function openDropMapDetail(mapId) {
+  const stack = dropMapStack();
+  if (!stack) return;
+  stack.innerHTML = "";
+  const modal = document.createElement("div");
+  modal.className = "vendor-shop-modal drop-map-modal drop-map-detail-modal";
+  modal.innerHTML = `
+    <div class="vshop-head">
+      <div class="vshop-meta"><h3>Carregando…</h3></div>
+      <button type="button" class="vshop-close drop-map-close" aria-label="Fechar">×</button>
+    </div>
+    <div class="vshop-body"><div class="vshop-state"><div class="spinner"></div>Carregando drops…</div></div>`;
+  stack.appendChild(modal);
+  syncDropMapLayer();
+  modal.querySelector(".drop-map-close")?.addEventListener("click", closeDropMapDetail);
+
+  try {
+    const res = await window.pywebview.api.drop_calc_get_map(mapId);
+    if (handleApiAuth(res)) { closeDropMapDetail(); return; }
+    if (!res?.ok) {
+      modal.querySelector(".vshop-body").innerHTML =
+        `<div class="vshop-state err">${escapeHtml(res?.error || "Erro")}</div>`;
+      return;
+    }
+    const mapa = res.mapa;
+    DROP_STATE.last_map_id = mapId;
+    scheduleDropStateSave();
+    await ensureDropItemMetaCatalog();
+    const groupedByCtx = DROP_CTX_GROUP_MAPS.has(mapId);
+    const floorChances = DROP_FLOOR_CHANCE_MAPS.has(mapId);
+    const rows = enrichDropRowsForMap(flattenDropItems(mapa), mapId).map((r, i) => ({
+      ...r,
+      key: `${i}-${r.nome}-${r.contexto}`,
+    }));
+    DROP_ACTIVE_MAP = { id: mapId, nome: mapa.nome, rows, contexto: "" };
+
+    modal.querySelector(".vshop-meta h3").textContent = mapa.nome || mapId;
+    modal.querySelector(".vshop-body").innerHTML = `
+      <div class="vshop-table-wrap drop-map-table-wrap">
+        <table class="vshop-table drop-map-table">
+          <thead><tr>
+            <th>Ícone</th><th>Nome</th><th>ID</th><th>${groupedByCtx ? "Seção" : "Contexto"}</th><th>${floorChances ? "Chance por andar" : "Chance crua"}</th><th>Com buffs</th>
+          </tr></thead>
+          <tbody id="drop-map-tbody">${renderDropMapTableRows(rows, mapId)}</tbody>
+        </table>
+      </div>`;
+
+    await refreshDropBonusSummary(mapId, rows.find((r) => r.contexto)?.contexto || "");
+    await rerenderDropMapTable();
+  } catch (err) {
+    modal.querySelector(".vshop-body").innerHTML =
+      `<div class="vshop-state err">${escapeHtml(String(err))}</div>`;
+  }
+}
+
+document.getElementById("drop-map-backdrop")?.addEventListener("click", closeTopDropMapModal);
+
 async function openDetail(item) {
   closeNotifyDrawer();
   const drawer = document.getElementById("drawer");
@@ -3328,8 +4676,15 @@ async function openDetail(item) {
             <span class="sec-label">Vendas por moeda</span>
             <div class="cur-tabs" id="cur-tabs"></div>
           </div>
+          <div class="sec-row hist-filters">
+            <span class="sec-label">Período</span>
+            <div class="hist-tabs" id="hist-period-tabs"></div>
+          </div>
           <div id="d-chart" class="hist-box"><div class="drawer-state"><div class="spinner"></div>Carregando gráfico…</div></div>
-          <div class="sec-label">Histórico das vendas</div>
+          <div class="sec-row hist-filters hist-sales-head">
+            <span class="sec-label">Histórico das vendas</span>
+            <div class="hist-tabs" id="hist-limit-tabs"></div>
+          </div>
           <div id="d-sales"><div class="drawer-state"><div class="spinner"></div>Carregando vendas…</div></div>
         </div>
       </div>
@@ -3342,6 +4697,11 @@ async function openDetail(item) {
   document.getElementById("d-ws").before(createMonitorButton(item));
 
   _drawerId = item.id;
+  _histCur = null;
+  _histUserPickedCur = false;
+  _histPeriod = "30d";
+  _histDisplayLimit = 10;
+  _histData = null;
   loadDetailStores(item, item.id);
   loadDetailHistory(item.id);
 }
@@ -3350,6 +4710,7 @@ async function loadDetailStores(item, reqId) {
   try {
     const d = await window.pywebview.api.get_item_detail(item.id);
     if (reqId !== currentDrawerId()) return;
+    if (handleApiAuth(d)) return;
     const storesEl = document.getElementById("d-stores");
     const descEl = document.getElementById("d-desc");
     if (!d.ok) {
@@ -3387,25 +4748,124 @@ async function loadDetailStores(item, reqId) {
 }
 
 const CUR_TAB_LABEL = { zeny: "ZENY", rmt: "RMT", hero_points: "HP" };
+const HIST_PERIOD_LABEL = { "24h": "24h", "7d": "7 dias", "30d": "30 dias" };
+const HIST_PERIOD_ORDER = ["30d", "7d", "24h"];
+const HIST_PERIOD_MS = { "24h": 24 * 3600e3, "7d": 7 * 24 * 3600e3, "30d": 30 * 24 * 3600e3 };
+const HIST_LIMIT_ORDER = [10, 30, 50];
 let _histData = null;
 let _histCur = null;
+let _histUserPickedCur = false;
+let _histPeriod = "30d";
+let _histDisplayLimit = 10;
+
+function parseSaleDateMs(str) {
+  const raw = String(str || "").trim();
+  if (!raw) return null;
+  const iso = raw.match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (iso) {
+    const d = new Date(
+      Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]),
+      Number(iso[4]), Number(iso[5]), Number(iso[6] || 0)
+    );
+    return Number.isNaN(d.getTime()) ? null : d.getTime();
+  }
+  const br = raw.match(/(\d{2})\/(\d{2})\/(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+  if (br) {
+    const d = new Date(
+      Number(br[3]), Number(br[2]) - 1, Number(br[1]),
+      Number(br[4] || 0), Number(br[5] || 0), Number(br[6] || 0)
+    );
+    return Number.isNaN(d.getTime()) ? null : d.getTime();
+  }
+  if (/^\d+$/.test(raw)) {
+    let ts = Number(raw);
+    if (ts > 1e12) ts = Math.floor(ts / 1000);
+    return ts > 1e9 ? ts * 1000 : null;
+  }
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d.getTime();
+}
+
+function filterEntriesByPeriod(entries, period) {
+  const windowMs = HIST_PERIOD_MS[period] || HIST_PERIOD_MS["30d"];
+  const cutoff = Date.now() - windowMs;
+  return (entries || []).filter((e) => {
+    const ms = parseSaleDateMs(e.date);
+    return ms == null || ms >= cutoff;
+  });
+}
+
+function computeHistStats(entries) {
+  const sorted = (entries || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const priced = sorted.filter((e) => (Number(e.price) || 0) > 0);
+  if (!priced.length) return { last: 0, min: 0, max: 0, avg: 0, count: (entries || []).length };
+  const prices = priced.map((e) => Number(e.price) || 0);
+  return {
+    last: prices[0],
+    min: Math.min(...prices),
+    max: Math.max(...prices),
+    avg: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
+    count: (entries || []).length,
+  };
+}
+
+function buildChartPoints(entries) {
+  return filterEntriesByPeriod(entries, _histPeriod)
+    .slice()
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .filter((e) => (Number(e.price) || 0) > 0)
+    .map((e) => ({ t: e.date, price: Number(e.price) || 0 }));
+}
+
+function histCurrencyCount(cur, period) {
+  const block = _histData?.currencies?.[cur];
+  const entries = block?.entries || block?.sales || [];
+  return filterEntriesByPeriod(entries, period || _histPeriod).length;
+}
+
+function setHistPeriod(period) {
+  if (!period || period === _histPeriod) return;
+  _histPeriod = period;
+  document.querySelectorAll("#hist-period-tabs .hist-tab").forEach((b) => {
+    b.classList.toggle("active", b.dataset.period === period);
+  });
+  renderCurTabs();
+  renderHistoryFor(_histCur);
+}
+
+function setHistDisplayLimit(limit) {
+  const n = Number(limit);
+  if (!n || n === _histDisplayLimit) return;
+  _histDisplayLimit = n;
+  document.querySelectorAll("#hist-limit-tabs .hist-tab").forEach((b) => {
+    b.classList.toggle("active", Number(b.dataset.limit) === n);
+  });
+  renderHistoryFor(_histCur);
+}
 
 async function loadDetailHistory(reqId) {
   try {
     const h = await window.pywebview.api.get_price_history(reqId);
     if (reqId !== currentDrawerId()) return;
+    if (handleApiAuth(h)) return;
     const cb = document.getElementById("d-chart");
     const sb = document.getElementById("d-sales");
     const tabs = document.getElementById("cur-tabs");
     if (!h.ok) {
       if (tabs) tabs.innerHTML = "";
+      document.getElementById("hist-period-tabs")?.replaceChildren();
+      document.getElementById("hist-limit-tabs")?.replaceChildren();
       if (cb) cb.innerHTML = `<div class="chart-empty">Sem histórico (${escapeHtml(h.error || "erro")}).</div>`;
       if (sb) sb.innerHTML = "";
       return;
     }
     _histData = h;
-    _histCur = h.default || "zeny";
+    if (!_histUserPickedCur || !_histCur) {
+      _histCur = h.default || "zeny";
+    }
     renderCurTabs();
+    renderHistPeriodTabs();
+    renderHistLimitTabs();
     renderHistoryFor(_histCur);
   } catch (err) {
     if (reqId !== currentDrawerId()) return;
@@ -3414,17 +4874,50 @@ async function loadDetailHistory(reqId) {
   }
 }
 
+function renderHistPeriodTabs() {
+  const tabs = document.getElementById("hist-period-tabs");
+  if (!tabs) return;
+  tabs.innerHTML = HIST_PERIOD_ORDER.map((p) => {
+    const active = p === _histPeriod ? " active" : "";
+    return `<button type="button" class="hist-tab${active}" data-period="${p}">${HIST_PERIOD_LABEL[p]}</button>`;
+  }).join("");
+  tabs.querySelectorAll(".hist-tab").forEach((b) =>
+    b.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setHistPeriod(b.dataset.period);
+    }));
+}
+
+function renderHistLimitTabs() {
+  const tabs = document.getElementById("hist-limit-tabs");
+  if (!tabs) return;
+  tabs.innerHTML = HIST_LIMIT_ORDER.map((n) => {
+    const active = n === _histDisplayLimit ? " active" : "";
+    return `<button type="button" class="hist-tab${active}" data-limit="${n}">${n}</button>`;
+  }).join("");
+  tabs.querySelectorAll(".hist-tab").forEach((b) =>
+    b.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setHistDisplayLimit(b.dataset.limit);
+    }));
+}
+
 function renderCurTabs() {
   const tabs = document.getElementById("cur-tabs");
   if (!tabs || !_histData) return;
   tabs.innerHTML = ORDER.map((k) => {
-    const has = (_histData.currencies[k] && _histData.currencies[k].count) ? "" : " empty";
+    const has = histCurrencyCount(k) ? "" : " empty";
     const active = k === _histCur ? " active" : "";
-    return `<button class="cur-tab${active}${has}" data-cur="${k}" style="--c:${COLOR[k]}">${CUR_TAB_LABEL[k]}</button>`;
+    return `<button type="button" class="cur-tab${active}${has}" data-cur="${k}" style="--c:${COLOR[k]}">${CUR_TAB_LABEL[k]}</button>`;
   }).join("");
   tabs.querySelectorAll(".cur-tab").forEach((b) =>
-    b.addEventListener("click", () => {
+    b.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       _histCur = b.dataset.cur;
+      _histUserPickedCur = true;
       renderCurTabs();
       renderHistoryFor(_histCur);
     }));
@@ -3433,16 +4926,23 @@ function renderCurTabs() {
 function renderHistoryFor(cur) {
   const cb = document.getElementById("d-chart");
   const sb = document.getElementById("d-sales");
-  const data = _histData && _histData.currencies ? _histData.currencies[cur] : null;
+  const block = _histData && _histData.currencies ? _histData.currencies[cur] : null;
   const label = CURRENCY[cur] || CURRENCY.zeny;
+  const allEntries = (block && (block.entries || block.sales)) || [];
+  const filtered = filterEntriesByPeriod(allEntries, _histPeriod);
+  const sortedDesc = filtered.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const shown = sortedDesc.slice(0, _histDisplayLimit);
+  const points = buildChartPoints(allEntries);
+  const st = computeHistStats(sortedDesc);
+  const periodLabel = HIST_PERIOD_LABEL[_histPeriod] || _histPeriod;
+  const total = filtered.length;
 
   if (cb) {
-    if (!data || !data.points || data.points.length < 2) {
-      cb.innerHTML = '<div class="chart-empty">Histórico insuficiente nesta moeda.</div>';
+    if (!total) {
+      cb.innerHTML = `<div class="chart-empty">Sem vendas nesta moeda (${escapeHtml(periodLabel)}).</div>`;
     } else {
-      const st = data.stats || {};
       cb.innerHTML = `
-        ${priceChart(data.points, cur)}
+        ${priceChart(points, cur)}
         <div class="stats">
           ${statBox("Último", st.last || 0, cur)}
           ${statBox("Mínimo", st.min || 0, cur)}
@@ -3452,9 +4952,10 @@ function renderHistoryFor(cur) {
     }
   }
   if (sb) {
-    const sales = (data && data.sales) || [];
-    if (!sales.length) sb.innerHTML = '<div class="chart-empty">Sem vendas registadas nesta moeda.</div>';
-    else sb.innerHTML = sales.map((s) => `
+    if (!shown.length) {
+      sb.innerHTML = `<div class="chart-empty">Sem vendas registadas nesta moeda (${escapeHtml(periodLabel)}).</div>`;
+    } else {
+      const rows = shown.map((s) => `
       <div class="sale-row">
         <div class="sl">
           <div class="sl-when">${escapeHtml(shortDate(s.date))}</div>
@@ -3462,6 +4963,11 @@ function renderHistoryFor(cur) {
         </div>
         <div class="sl-pr" style="color:${COLOR[cur]}">${label.fmt(s.price)} ${label.label}</div>
       </div>`).join("");
+      const foot = total > shown.length
+        ? `<div class="hist-foot">Mostrando ${shown.length} de ${total} vendas (${escapeHtml(periodLabel)})</div>`
+        : `<div class="hist-foot">${total} venda${total === 1 ? "" : "s"} (${escapeHtml(periodLabel)})</div>`;
+      sb.innerHTML = rows + foot;
+    }
   }
 }
 
@@ -3603,14 +5109,17 @@ document.addEventListener("keydown", (e) => {
 
 async function boot() {
   try {
+    initDiscordUi();
     try {
       const cfg = await window.pywebview.api.get_settings();
       applyTheme((cfg.settings && cfg.settings.ui_theme) || "dark");
     } catch (_) { applyTheme("dark"); }
+    await ensureDiscordOnBoot();
     STATE = await window.pywebview.api.get_home();
     try {
       const repaired = await window.pywebview.api.repair_monitored_generic_names();
-      if (repaired?.categories) STATE = repaired;
+      if (handleApiAuth(repaired)) { /* modal já visível */ }
+      else if (repaired?.categories) STATE = repaired;
     } catch (_) { /* ignora falha de correção */ }
     updateNavBadge();
     go("home");

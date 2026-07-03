@@ -1,6 +1,6 @@
 """
 Runtime partilhado: logging, scraping, API Hero Saga e helpers de domínio.
-Importado por ``app.py`` e por páginas que precisam de API sem import circular.
+Importado por ``web_poc/api.py``, ``app.py`` (reexports) e serviços sem import circular.
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from adapters.persistence import (
 )
 from core.constants import BASE_URL
 from mvp_timer import mvp_catalog_matches_search
-from ui.theme import C
+from core.theme import C
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -108,7 +108,7 @@ def _sync_iwork_name_from_sources(iwork: dict, history_data) -> None:
     )
 
 
-def api_item_history(item_id: int):
+def api_item_history(item_id: int, *, persist: bool = False):
     return app_services.api_item_history(
         item_id,
         base_url=BASE_URL,
@@ -117,6 +117,7 @@ def api_item_history(item_id: int):
         load_prices_history_fn=load_prices_history,
         save_prices_history_fn=save_prices_history,
         get_item_history_fn=get_item_history,
+        persist=persist,
         logger=logger,
     )
 

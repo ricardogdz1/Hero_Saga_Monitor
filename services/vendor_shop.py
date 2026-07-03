@@ -10,9 +10,9 @@ import re
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
-logger = logging.getLogger(__name__)
+from core.constants import BASE_URL
 
-BASE_URL = "https://herosaga.com.br"
+logger = logging.getLogger(__name__)
 
 
 def extract_vendor_id(href: str) -> Optional[int]:

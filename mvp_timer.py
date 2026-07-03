@@ -8,7 +8,7 @@ Imagens de mapa tentam URLs habituais do divine-pride.net.
 Sprites MVP: PNG em ``data/mvp_sprites/{id}.png`` (rápido; importar com
 ``tools/import_mvp_png_folder.py``), ou ``data/mvp_sprites_ai4rei/*.png``
 (exportados do HAR nn.ai4rei.net — ver ``tools/import_mvp_sprites_from_har.py``). Cache legacy em ``herosaga_dp_mob_images``.
-Em builds PyInstaller, a pasta ``data/`` deve ser incluída (ver ``HerosagaMonitor.spec``).
+Em builds PyInstaller, a pasta ``data/`` deve ser incluída (ver ``HerosagaMonitor.spec`` → entry ``web_poc/run.py``).
 """
 
 from __future__ import annotations
@@ -597,6 +597,17 @@ def new_timer_entry(
         "death_at": death_at_iso,
         "alert_fired": False,
     }
+
+
+def format_death_at_for_edit(raw: Optional[str] = None) -> str:
+    """Formata morte para o campo de edição (AAAA-MM-DD HH:MM, hora local)."""
+    s = (raw or "").strip()
+    if not s:
+        return datetime.now().strftime("%Y-%m-%d %H:%M")
+    dt = parse_user_datetime(s)
+    if dt:
+        return dt.strftime("%Y-%m-%d %H:%M")
+    return s[:16].replace("T", " ")
 
 
 def parse_user_datetime(s: str) -> Optional[datetime]:

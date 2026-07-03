@@ -1,0 +1,197 @@
+{
+  "grupos": [
+    {
+      "id": "itens",
+      "label": "Itens",
+      "buffs": [
+        {
+          "id": "calice",
+          "nome": "Cálice do Elixir Sagrado",
+          "bonus_pct": 220,
+          "icon_file": "Cálice do Elixir Sagrado.png",
+          "exclusive_group": "mega_drop",
+          "blocks": [
+            "lata_gatos"
+          ]
+        },
+        {
+          "id": "chicle",
+          "nome": "Chicle de Bola",
+          "bonus_pct": 200,
+          "icon_file": "Chicle de Bola.png",
+          "exclusive_group": "mega_drop"
+        },
+        {
+          "id": "goma",
+          "nome": "Goma de Mascar",
+          "bonus_pct": 100,
+          "icon_file": "Goma de Mascar.png",
+          "exclusive_group": "mega_drop"
+        },
+        {
+          "id": "drop_pote",
+          "nome": "Drop em Pote",
+          "bonus_pct": 25,
+          "icon_file": "Drop em Pote.png"
+        },
+        {
+          "id": "fusao_pote",
+          "nome": "Fusão em Pote",
+          "bonus_pct": 25,
+          "icon_file": "Fusão em Pote.png"
+        },
+        {
+          "id": "lata_gatos",
+          "nome": "Lata de Comida para Gatos",
+          "bonus_pct": 20,
+          "icon_file": "Lata de Comida para Gatos.png",
+          "blocked_by": [
+            "calice"
+          ]
+        },
+        {
+          "id": "manual_mascar",
+          "nome": "Manual de Mascar",
+          "bonus_pct": 20,
+          "icon_file": "Manual de Mascar.png"
+        },
+        {
+          "id": "po_runas",
+          "nome": "Pó de Runas",
+          "bonus_pct": 20,
+          "icon_file": "Pó de Runas.png"
+        },
+        {
+          "id": "pocao_doador",
+          "nome": "Poção do Doador",
+          "bonus_pct": 35,
+          "icon_file": "Poção do Doador.png"
+        }
+      ]
+    },
+    {
+      "id": "bonus",
+      "label": "Bônus",
+      "buffs": [
+        {
+          "id": "fidelizado",
+          "nome": "Fidelizado Hero Academy",
+          "bonus_pct": 20,
+          "icon_file": "Fidelizado Hero Academy.png"
+        },
+        {
+          "id": "premium",
+          "nome": "Premium",
+          "bonus_pct": 10,
+          "icon_file": "Premium.png"
+        },
+        {
+          "id": "bencao_valhalla",
+          "nome": "Benção de Valhalla",
+          "bonus_pct": 10,
+          "icon_file": "Benção de Valhalla.png"
+        }
+      ]
+    },
+    {
+      "id": "reputacao",
+      "label": "Reputação / Ascensão",
+      "buffs": [
+        {
+          "id": "rep_bio",
+          "nome": "Reputação Bio",
+          "icon_file": "Reputação Bio.png",
+          "tier_track": "bio"
+        },
+        {
+          "id": "rep_cheffenia",
+          "nome": "Reputação Cheffênia",
+          "icon_file": "Reputação Cheffenia.png",
+          "tier_track": "cheffenia"
+        },
+        {
+          "id": "rep_temporada",
+          "nome": "Reputação Temporada",
+          "icon_file": "Reputação Temporada.png",
+          "tier_track": "temporada"
+        },
+        {
+          "id": "ascensao",
+          "nome": "Ascensão",
+          "icon_file": "Ascenção.png",
+          "tier_track": "ascensao"
+        }
+      ]
+    },
+    {
+      "id": "pet",
+      "label": "Pet",
+      "buffs": [
+        {
+          "id": "pet_10",
+          "nome": "Pet 10%",
+          "bonus_pct": 10,
+          "icon_file": "Pet 10%.png",
+          "exclusive_group": "pet",
+          "grade_track": "pet_grade"
+        },
+        {
+          "id": "pet_15",
+          "nome": "Pet 15%",
+          "bonus_pct": 15,
+          "icon_file": "Pet 15%.png",
+          "exclusive_group": "pet",
+          "grade_track": "pet_grade"
+        },
+        {
+          "id": "pet_20",
+          "nome": "Pet 20%",
+          "bonus_pct": 20,
+          "icon_file": "Pet 20%.png",
+          "exclusive_group": "pet",
+          "grade_track": "pet_grade"
+        },
+        {
+          "id": "pet_25",
+          "nome": "Pet 25%",
+          "bonus_pct": 25,
+          "icon_file": "Pet 25%.png",
+          "exclusive_group": "pet",
+          "grade_track": "pet_grade"
+        },
+        {
+          "id": "pet_30",
+          "nome": "Pet 30%",
+          "bonus_pct": 30,
+          "icon_file": "Pet 30%.png",
+          "exclusive_group": "pet",
+          "grade_track": "pet_grade"
+        },
+        {
+          "id": "pet_35",
+          "nome": "Pet 35%",
+          "bonus_pct": 35,
+          "icon_file": "Pet 35%.png",
+          "exclusive_group": "pet",
+          "grade_track": "pet_grade"
+        },
+        {
+          "id": "pet_40",
+          "nome": "Pet 40%",
+          "bonus_pct": 40,
+          "icon_file": "Pet 40%.png",
+          "exclusive_group": "pet",
+          "grade_track": "pet_grade"
+        },
+        {
+          "id": "pet_50",
+          "nome": "Pet 50%",
+          "bonus_pct": 50,
+          "icon_file": "Pet 50%.png",
+          "exclusive_group": "pet",
+          "grade_track": "pet_grade"
+        }
+      ]
+    }
+  ]
+}

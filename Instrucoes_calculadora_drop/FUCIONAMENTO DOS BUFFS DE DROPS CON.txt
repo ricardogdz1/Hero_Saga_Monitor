@@ -1,0 +1,39 @@
+FUCIONAMENTO DOS BUFFS DE DROPS CONFORME ITENS, BONUS E REPUTACAO + ASCENCAO
+
+ITENS:
+
+Cálice do Elixir Sagrado +200% de drop
+Chicle de Bola - +200% de drop
+Drop em Pote +25% de drop
+Fusão em Pote +25% de drop
+Goma de Mascar +100% de drop
+Lata de Comida para Gatos +15% de drop
+Manual de Mascar +20% de drop
+Pó de Runas +20% de drop
+Poção do Doador +35% de drop
+
+BONUS:
+
+Fidelizado Hero Academy +20% de drop
+Premium +10% de drop
+Benção de Valhalla +10% de drop
+
+REPUTAÇÃO e ASCENÇÃO:
+
+Reputação Bio drop conforme PDF
+Reputação Cheffenia drop conforme PDF
+Reputação Temporada drop conforme PDF
+Ascenção drop conforme PDF
+
+
+REGRAS:
+
+Cálice do Elixir Sagrado, Chicle de Bola e Goma de Mascar, NÃO são cumulativos entre sí.
+Os níveis de REPUTAÇÃO são cumulativos entre eles.
+Lata de Comida para Gatos não é cumulativo com Cálice do Elixir Sagrado.
+
+
+CHANCES DE DROP PARA ITENS FARMAVEIS:
+
+Cheffenia: Moeda Cheff. Normal = 20% (Modo Normal, 30% (Modo Intermediate)
+Bio 5: Moeda Bio

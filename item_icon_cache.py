@@ -5,9 +5,11 @@ Cache em disco de ícones de itens (home monitorados).
 
 from __future__ import annotations
 
+import base64
 import logging
 import os
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from typing import Callable, Optional
 
@@ -34,7 +36,10 @@ def item_icon_disk_path(item_id: int) -> str:
     return os.path.join(ITEM_ICONS_DIR, f"{int(item_id)}.png")
 
 
-def _processicon_url(item_id: int, *, base_url: str = "https://herosaga.com.br") -> str:
+from core.constants import BASE_URL as _DEFAULT_BASE_URL
+
+
+def _processicon_url(item_id: int, *, base_url: str = _DEFAULT_BASE_URL) -> str:
     return f"{base_url.rstrip('/')}/?module=image&action=processicon&id={int(item_id)}"
 
 
@@ -42,7 +47,7 @@ def resolve_item_icon_url(
     item_id: Optional[int],
     url: Optional[str],
     *,
-    base_url: str = "https://herosaga.com.br",
+    base_url: str = _DEFAULT_BASE_URL,
 ) -> str:
     """URL do ícone (meta do item ou fallback processicon por ID)."""
     norm = (url or "").strip()
@@ -252,7 +257,7 @@ def read_item_icon_png_bytes(
     **kwargs,
 ) -> Optional[bytes]:
     """Disco (se pronto) → download processicon → processar → gravar 24×24."""
-    base_url = str(kwargs.get("base_url") or "https://herosaga.com.br")
+    base_url = str(kwargs.get("base_url") or _DEFAULT_BASE_URL)
     ensure_item_icons_dir()
     path = item_icon_disk_path(item_id)
 
@@ -290,3 +295,62 @@ def read_item_icon_png_bytes(
     except Exception as ex:
         logger.debug("Gravar ícone %s: %s", path, ex)
         return cached
+
+
+def png_bytes_to_data_uri(raw: bytes) -> str:
+    return "data:image/png;base64," + base64.b64encode(raw).decode("ascii")
+
+
+def read_cached_icon_data_uri(item_id: int) -> str:
+    """Devolve data URI só se o PNG já existir em ``data/item_icons/`` (sem rede)."""
+    try:
+        iid = int(item_id)
+    except (TypeError, ValueError):
+        return ""
+    if iid <= 0:
+        return ""
+    raw = _read_cached_icon_bytes(iid)
+    if raw and _icon_cache_is_ready(raw):
+        return png_bytes_to_data_uri(raw)
+    return ""
+
+
+def fetch_icons_batch(
+    items: list[tuple[int, str]],
+    fetch_url_bytes: Callable[[str], Optional[bytes]],
+    *,
+    base_url: str = _DEFAULT_BASE_URL,
+    max_workers: int = 4,
+) -> dict[int, str]:
+    """Baixa/processa ícones em paralelo (fila controlada). Devolve {item_id: data_uri}."""
+    unique: dict[int, str] = {}
+    for iid, url in items:
+        try:
+            nid = int(iid)
+        except (TypeError, ValueError):
+            continue
+        if nid > 0 and nid not in unique:
+            unique[nid] = str(url or "")
+
+    if not unique:
+        return {}
+
+    def _one(pair: tuple[int, str]) -> tuple[int, str]:
+        iid, url = pair
+        try:
+            raw = read_item_icon_png_bytes(
+                iid, url, fetch_url_bytes, base_url=base_url
+            )
+            if raw:
+                return iid, png_bytes_to_data_uri(raw)
+        except Exception as ex:  # noqa: BLE001
+            logger.debug("Ícone em lote %s: %s", iid, ex)
+        return iid, ""
+
+    out: dict[int, str] = {}
+    workers = max(1, min(int(max_workers or 4), 8))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for iid, uri in pool.map(_one, unique.items()):
+            if uri:
+                out[iid] = uri
+    return out

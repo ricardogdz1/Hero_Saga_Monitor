@@ -1,5 +1,5 @@
 """
-Runner da prova de conceito (Home em web/pywebview).
+Runner principal — PyWebView + frontend HTML/CSS/JS.
 
 Abre uma janela com o webview nativo do sistema (no Windows, Edge WebView2)
 e liga o front-end em ``web/`` à ponte Python em ``api.py``.
@@ -22,8 +22,22 @@ import webview  # noqa: E402
 from web_poc.api import Api  # noqa: E402
 
 
+def _bundle_root() -> str:
+    if getattr(sys, "frozen", False):
+        return getattr(sys, "_MEIPASS", _ROOT)
+    return _ROOT
+
+
+def _index_html() -> str:
+    if getattr(sys, "frozen", False):
+        return os.path.join(_bundle_root(), "web_poc", "web", "index.html")
+    return os.path.join(_HERE, "web", "index.html")
+
+
 def main() -> None:
-    index = os.path.join(_HERE, "web", "index.html")
+    index = os.path.abspath(_index_html())
+    if not os.path.isfile(index):
+        raise FileNotFoundError(f"Frontend não encontrado: {index}")
     webview.create_window(
         "GDZ Monitor",
         url=index,

@@ -28,6 +28,9 @@ DEFAULT_SETTINGS = {
     "divine_pride_api_key": "",
     # iRO = International RO (inglês + dados internacionais na API). Outros: bRO, etc.
     "divine_pride_server": "iRO",
+    # Hero Saga — sessão Discord (cookie fluxSessionData após login em rpgherosaga.com)
+    "herosaga_session_cookie": "",
+    "herosaga_session_saved_at": "",
     # Som ao terminar contagem MVP (MP3; Windows — ver mvp_alert_sound.py)
     "mvp_alert_sound_path": r"C:\Users\Ricardo\Desktop\Som\Alerta de Som.mp3",
 }
@@ -71,6 +74,8 @@ def load_settings() -> dict:
     dp_srv = str(out.get("divine_pride_server") or "").strip()
     out["divine_pride_server"] = dp_srv if dp_srv else "iRO"
     out["mvp_alert_sound_path"] = str(out.get("mvp_alert_sound_path") or "").strip()
+    out["herosaga_session_cookie"] = str(out.get("herosaga_session_cookie") or "").strip()
+    out["herosaga_session_saved_at"] = str(out.get("herosaga_session_saved_at") or "").strip()
     return out
 
 

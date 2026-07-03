@@ -9,6 +9,13 @@ from urllib.parse import urljoin
 
 import requests
 
+from app_domain import (
+    SALES_RETENTION_DAYS,
+    local_sale_to_api,
+    merge_sales_history,
+    normalize_sale_record,
+)
+
 
 def normalize_media_url(url, *, base_url: str) -> str:
     """Garante URL absoluta para ícones/imagens do site (evita falha no download)."""
@@ -89,6 +96,55 @@ def item_card_meta_from_details(details: dict, *, item_card_keys) -> dict:
     return {k: details[k] for k in item_card_keys if details.get(k)}
 
 
+def _fetch_item_sales_from_api(
+    item_id: int,
+    *,
+    base_url: str,
+    scraper,
+    clean_json_response_fn: Callable[[str, bytes], str],
+    logger=None,
+) -> list:
+    all_sales = []
+    for sale_type in ("rops", "zeny", "rmt"):
+        try:
+            url = f"{base_url}/?module=item&action=saleshistory&item_id={item_id}&sale_type={sale_type}"
+            if logger:
+                logger.info(f"Tentando {sale_type}: {url}")
+            response = scraper.get(url, timeout=10)
+            if response.status_code != 200 or not response.text.strip():
+                continue
+            clean_text = clean_json_response_fn(response.text, response.content)
+            data = json.loads(clean_text)
+            if data.get("success") and data.get("sales"):
+                sales = data.get("sales", [])
+                if logger:
+                    logger.info(f"✓ {sale_type}: {len(sales)} vendas encontradas")
+                all_sales.extend(sales)
+        except Exception as e:
+            if logger:
+                logger.debug(f"Erro ao buscar {sale_type}: {str(e)}")
+    if all_sales:
+        all_sales.sort(key=lambda x: x.get("sale_date", ""), reverse=True)
+    return all_sales
+
+
+def _persist_merged_item_sales(
+    item_id: int,
+    incoming_sales: list,
+    *,
+    load_prices_history_fn: Callable[[], dict],
+    save_prices_history_fn: Callable[[dict], None],
+) -> list:
+    history = load_prices_history_fn()
+    item_key = str(item_id)
+    existing = history.get(item_key) or []
+    incoming = [normalize_sale_record(s) for s in incoming_sales]
+    merged = merge_sales_history(existing, incoming, retention_days=SALES_RETENTION_DAYS)
+    history[item_key] = merged
+    save_prices_history_fn(history)
+    return merged
+
+
 def api_item_history(
     item_id: int,
     *,
@@ -98,72 +154,48 @@ def api_item_history(
     load_prices_history_fn: Callable[[], dict],
     save_prices_history_fn: Callable[[dict], None],
     get_item_history_fn: Callable[[int], dict],
+    persist: bool = False,
     logger=None,
 ):
     """
     Busca histórico de vendas/preços do item usando o endpoint correto.
     Tenta múltiplos tipos de venda: rops, zeny, rmt.
+
+    Com ``persist=True`` (itens monitorados), funde com o armazenamento local
+    e remove automaticamente vendas com mais de 30 dias.
     """
     if logger:
         logger.info(f"Fetching history for item ID: {item_id}")
 
-    all_sales = []
-    sale_types = ["rops", "zeny", "rmt"]
+    api_sales = _fetch_item_sales_from_api(
+        item_id,
+        base_url=base_url,
+        scraper=scraper,
+        clean_json_response_fn=clean_json_response_fn,
+        logger=logger,
+    )
 
-    for sale_type in sale_types:
-        try:
-            url = f"{base_url}/?module=item&action=saleshistory&item_id={item_id}&sale_type={sale_type}"
-            if logger:
-                logger.info(f"Tentando {sale_type}: {url}")
-
-            response = scraper.get(url, timeout=10)
-            if logger:
-                logger.debug(f"Status {sale_type}: {response.status_code}")
-
-            if response.status_code == 200 and response.text.strip():
-                try:
-                    clean_text = clean_json_response_fn(response.text, response.content)
-                    data = json.loads(clean_text)
-
-                    if data.get("success") and data.get("sales"):
-                        sales = data.get("sales", [])
-                        if logger:
-                            logger.info(f"✓ {sale_type}: {len(sales)} vendas encontradas")
-                        all_sales.extend(sales)
-                        if logger and sales:
-                            logger.debug(f"Primeira venda de {sale_type}: {json.dumps(sales[0], ensure_ascii=False)}")
-                except Exception as e:
-                    if logger:
-                        logger.debug(f"Parse error para {sale_type}: {str(e)}")
-        except Exception as e:
-            if logger:
-                logger.debug(f"Erro ao buscar {sale_type}: {str(e)}")
-
-    if all_sales:
+    if persist:
+        merged = _persist_merged_item_sales(
+            item_id,
+            api_sales,
+            load_prices_history_fn=load_prices_history_fn,
+            save_prices_history_fn=save_prices_history_fn,
+        )
+        formatted = [local_sale_to_api(s) for s in merged]
         if logger:
-            logger.info(f"✓ Total de vendas encontradas: {len(all_sales)}")
-        all_sales.sort(key=lambda x: x.get("sale_date", ""), reverse=True)
+            logger.info(f"✓ Histórico acumulado para item {item_id}: {len(formatted)} vendas")
+        return {
+            "success": True,
+            "sales": formatted,
+            "item_id": item_id,
+            "total_sales": len(formatted),
+        }
 
-        history = load_prices_history_fn()
-        history[str(item_id)] = []
-
-        for sale in all_sales[:30]:
-            history[str(item_id)].append(
-                {
-                    "timestamp": sale.get("sale_date", datetime.now().isoformat()),
-                    "price": sale.get("price", 0),
-                    "seller_name": sale.get("seller_name", "Shop"),
-                    "buyer_name": sale.get("buyer_name", "Comprador"),
-                    "quantity": sale.get("quantity", 1),
-                    "sale_type": sale.get("sale_type", ""),
-                }
-            )
-
-        save_prices_history_fn(history)
+    if api_sales:
         if logger:
-            logger.info(f"✓ Histórico armazenado com {len(history[str(item_id)])} vendas")
-
-        return {"success": True, "sales": all_sales, "item_id": item_id, "total_sales": len(all_sales)}
+            logger.info(f"✓ Total de vendas encontradas: {len(api_sales)}")
+        return {"success": True, "sales": api_sales, "item_id": item_id, "total_sales": len(api_sales)}
 
     if logger:
         logger.warning(f"Nenhuma venda encontrada para item {item_id}")
@@ -325,6 +357,7 @@ def get_item_history(item_id: int, *, load_prices_history_fn: Callable[[], dict]
                 "buyer_name": safe_get_fn(sale, "buyer_name", "—"),
                 "price": sale.get("price", 0),
                 "quantity": sale.get("quantity", 1),
+                "sale_type": sale.get("sale_type", ""),
             }
         )
 

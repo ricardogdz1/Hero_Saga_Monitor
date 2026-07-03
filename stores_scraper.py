@@ -10,7 +10,8 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 from urllib.parse import urljoin
-import cloudscraper
+from adapters.network import HEADERS, scraper
+from core.constants import BASE_URL
 from bs4 import BeautifulSoup
 import requests
 
@@ -18,16 +19,7 @@ from price_parse import parse_price_cell, coerce_price
 
 logger = logging.getLogger(__name__)
 
-# Instancia scraper global
-scraper = cloudscraper.create_scraper(
-    browser={
-        'browser': 'chrome',
-        'platform': 'windows',
-        'desktop': True
-    }
-)
-
-# Headers para simular navegador real
+# Headers para simular navegador real (scraper partilhado em adapters.network)
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -72,6 +64,10 @@ class StoreScraper(ABC):
                 self.logger.warning(f"❌ Status {response.status_code}")
                 return None
         except Exception as e:
+            from adapters.herosaga_session import HerosagaAuthRequired
+
+            if isinstance(e, HerosagaAuthRequired):
+                raise
             self.logger.error(f"❌ Erro ao buscar URL: {str(e)}")
             return None
     
@@ -93,9 +89,9 @@ class StoreScraper(ABC):
 
 
 class HerosagaScraper(StoreScraper):
-    """Scraper específico para Hero Saga (herosaga.com.br)."""
-    
-    BASE_URL = "https://herosaga.com.br"
+    """Scraper específico para Hero Saga (rpgherosaga.com)."""
+
+    BASE_URL = BASE_URL
     
     def __init__(self):
         super().__init__("Herosaga")
@@ -132,6 +128,10 @@ class HerosagaScraper(StoreScraper):
             return standardized
             
         except Exception as e:
+            from adapters.herosaga_session import HerosagaAuthRequired
+
+            if isinstance(e, HerosagaAuthRequired):
+                raise
             self.logger.error(f"❌ Erro na busca: {str(e)}")
             return []
     
@@ -162,6 +162,10 @@ class HerosagaScraper(StoreScraper):
             }
             
         except Exception as e:
+            from adapters.herosaga_session import HerosagaAuthRequired
+
+            if isinstance(e, HerosagaAuthRequired):
+                raise
             self.logger.error(f"❌ Erro ao obter detalhes: {str(e)}")
             return {"error": str(e)}
     

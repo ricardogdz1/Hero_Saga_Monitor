@@ -1,30 +1,55 @@
 # -*- mode: python ; coding: utf-8 -*-
 # Build (na raiz do projecto): pyinstaller HerosagaMonitor.spec
-# Inclui data/ no executável para uso offline.
+# Gera GDZMonitor.exe (PyWebView) com data/ e web_poc/web/ embutidos.
 
 import os
 
 block_cipher = None
 
-# PyInstaller injecta SPEC; __file__ não existe ao executar o .spec
 _spec = globals().get("SPEC") or os.path.abspath("HerosagaMonitor.spec")
 _root = os.path.normpath(os.path.dirname(_spec))
 
-# PyInstaller 6: lista de (pasta_origem, pasta_destino_relativa) — não usar Tree aqui
+_web_dir = os.path.join(_root, "web_poc", "web")
+_entry = os.path.join(_root, "web_poc", "run.py")
+
 _datas = [
     (os.path.join(_root, "data"), "data"),
+    (_web_dir, os.path.join("web_poc", "web")),
 ]
 
+_binaries = []
+_hidden = [
+    "cloudscraper",
+    "PIL",
+    "PIL.Image",
+    "bottle",
+    "webview",
+    "web_poc.api",
+    "web_poc.alert_worker",
+    "pythonnet",
+    "clr_loader",
+]
+
+try:
+    from PyInstaller.utils.hooks import collect_all
+
+    _wv_datas, _wv_bins, _wv_hidden = collect_all("webview")
+    _datas += _wv_datas
+    _binaries += _wv_bins
+    _hidden += _wv_hidden
+except Exception:
+    pass
+
 a = Analysis(
-    ["app.py"],
+    [_entry],
     pathex=[_root],
-    binaries=[],
+    binaries=_binaries,
     datas=_datas,
-    hiddenimports=["cloudscraper", "PIL", "PIL.Image", "PIL.ImageTk"],
+    hiddenimports=list(dict.fromkeys(_hidden)),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=["tkinter", "matplotlib", "customtkinter"],
     noarchive=False,
     optimize=0,
 )

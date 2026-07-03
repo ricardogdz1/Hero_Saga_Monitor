@@ -16,34 +16,44 @@ Ferramentas para Hero Saga (herosaga.com.br): mercado, alertas, build, timer MVP
    ```
    python web_poc/run.py
    ```
+   Ou dê duplo clique em `run.bat`.
+
+**Requisito Windows:** [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (já presente na maioria dos PCs com Edge).
 
 ### Método 2 — Gerar o .exe (Windows)
 
 1. Instale o Python 3.10+ em https://python.org
    - **IMPORTANTE:** marque "Add Python to PATH" na instalação
 2. Dê duplo clique em `build.bat`
-3. Aguarde (pode demorar 1-2 minutos)
+3. Aguarde (pode demorar 1–2 minutos)
 4. O executável estará em `dist/GDZMonitor.exe`
+
+O `.exe` usa PyWebView (mesma UI que `web_poc/run.py`) e inclui a pasta `data/` para catálogo MVP offline.
 
 ## Funcionalidades
 
 - **Busca por nome** — Busca itens na API oficial do Herosaga
 - **Histórico de vendas** — Vê o histórico completo de vendas de cada item
-- **Gráfico de preço** — Visualiza a variação de preço ao longo do tempo
-- **Estatísticas** — Último preço, mínimo, máximo e média
 - **Monitorar itens** — Salva itens favoritos para acesso rápido
-- **Histórico de buscas** — Rebusca rapidamente itens pesquisados antes
+- **Alertas de preço** — Notificações quando o preço cruza um limiar
+- **Simulação de build** — Atributos, equipamentos e stats IRO
+- **Timer MVP** — Respawn com mapas e alertas de spawn
+- **Auto Loot** — Grupos `@alootid2` com busca de itens
 
 ## Dados salvos
 
-O app salva seus dados em:
-```
-C:\Users\SeuUsuario\herosaga_monitor_data.json
-```
+O app salva seus dados na pasta do utilizador (`~`), por exemplo:
+
+- `herosaga_monitor_data.json` — monitorados e categorias
+- `herosaga_monitor_settings.json` — configurações
+- `herosaga_mvp_timers.json` — timers MVP
+- `herosaga_loot_groups.json` — grupos de auto loot
 
 ## API utilizada
 
 - Busca por nome: `herosaga.com.br/?module=vending&action=search&item_search=NOME`
 - Histórico por ID: `herosaga.com.br/?module=item&action=view&id=ID`
-"# Hero_Saga_Monitor" 
-"# Hero_Saga_Monitor" 
+
+## Scripts legados
+
+`app.py` reexporta funções de `app_runtime` (`from app import api_search`, etc.). Para abrir a app, use `web_poc/run.py`.

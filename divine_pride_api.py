@@ -12,10 +12,12 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, Optional
+import re
+from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
 import requests
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +40,15 @@ __all__ = [
     "fetch_skill",
     "fetch_title",
     "database_get",
+    "search_items_by_name",
+    "search_items_html",
+    "parse_item_rows_from_search_html",
     "DEFAULT_MONSTER_ACCEPT_LANGUAGE",
+    "DEFAULT_ITEM_SEARCH_LANG",
 ]
+
+ITEM_SEARCH_URL = f"{BASE_URL}/database/item"
+DEFAULT_ITEM_SEARCH_LANG = "pt-BR,pt;q=0.9,en;q=0.8"
 
 
 def resolve_api_key(explicit: Optional[str] = None) -> str:
@@ -324,6 +333,176 @@ def fetch_title(
     if not isinstance(data, dict):
         raise ValueError("Resposta Title: esperado object JSON")
     return data
+
+
+def parse_item_rows_from_search_html(html: str) -> List[Dict[str, Any]]:
+    """Extrai (id, nome?) das linhas da tabela de pesquisa de itens no site DP."""
+    soup = BeautifulSoup(html or "", "html.parser")
+    table = soup.find("table")
+    if not table:
+        return []
+    out: List[Dict[str, Any]] = []
+    seen: set[int] = set()
+    for tr in table.find_all("tr")[1:]:
+        a = tr.find("a", href=re.compile(r"/database/item/\d+"))
+        if not a:
+            continue
+        mm = re.search(r"/database/item/(\d+)", str(a.get("href") or ""))
+        if not mm:
+            continue
+        try:
+            iid = int(mm.group(1))
+        except (TypeError, ValueError):
+            continue
+        if iid in seen or iid <= 0:
+            continue
+        seen.add(iid)
+        tds = tr.find_all("td")
+        name = (tds[0].get_text(" ", strip=True) if tds else "") or (a.get_text(" ", strip=True) or "")
+        if name.startswith("[PH]"):
+            name = ""
+        out.append({"id": iid, "name": name})
+    return out
+
+
+def _dp_item_servers(server: Optional[str]) -> tuple[str, ...]:
+    """Hero Saga BR → tenta bRO antes do servidor configurado."""
+    out: list[str] = []
+    for s in ("bRO", str(server or "").strip(), "iRO"):
+        if s and s not in out:
+            out.append(s)
+    return tuple(out)
+
+
+def _fetch_item_display_name(
+    item_id: int,
+    *,
+    api_key: str,
+    servers: tuple[str, ...],
+    accept_language: Optional[str],
+    timeout: float,
+) -> str:
+    for srv in servers:
+        try:
+            data = fetch_item(
+                int(item_id),
+                api_key=api_key,
+                server=srv,
+                accept_language=accept_language,
+                timeout=timeout,
+            )
+        except Exception as ex:  # noqa: BLE001
+            logger.debug("Divine Pride item id=%s server=%s: %s", item_id, srv, ex)
+            continue
+        name = _name_from_item_api(data, item_id)
+        if name:
+            return name
+    return ""
+
+
+def search_items_html(
+    query: str,
+    *,
+    server: Optional[str] = "bRO",
+    limit: int = 40,
+    accept_language: Optional[str] = None,
+    timeout: float = 25.0,
+) -> List[Dict[str, Any]]:
+    """
+    Pesquisa itens por nome no site Divine Pride (HTML).
+
+    O formulário de itens usa o campo ``Name``; ``find=Search`` submete a pesquisa.
+    """
+    q = str(query or "").strip()
+    if not q:
+        return []
+    params: Dict[str, str] = {"Name": q, "find": "Search"}
+    srv = str(server or "").strip()
+    if srv:
+        params["server"] = srv
+    lang = str(accept_language or DEFAULT_ITEM_SEARCH_LANG).strip() or DEFAULT_ITEM_SEARCH_LANG
+    try:
+        r = requests.get(
+            ITEM_SEARCH_URL,
+            params=params,
+            headers={"Accept-Language": lang},
+            timeout=timeout,
+        )
+        r.raise_for_status()
+    except requests.RequestException as ex:
+        logger.warning("Divine Pride item search Name=%r: %s", q, ex)
+        return []
+    rows = parse_item_rows_from_search_html(r.text)
+    cap = max(1, int(limit or 40))
+    return rows[:cap]
+
+
+def _name_from_item_api(data: dict, item_id: int) -> str:
+    for key in ("name", "Name", "unidentifiedDisplayName", "identifiedDisplayName"):
+        v = data.get(key)
+        if v is None:
+            continue
+        s = str(v).strip()
+        if s and not s.startswith("[PH]"):
+            return s
+    return ""
+
+
+def search_items_by_name(
+    query: str,
+    *,
+    api_key: Optional[str] = None,
+    server: Optional[str] = "bRO",
+    accept_language: Optional[str] = "pt-BR,pt;q=0.9",
+    html_limit: int = 46,
+    timeout: float = 20.0,
+) -> List[Dict[str, Any]]:
+    """
+    Busca itens por nome: pesquisa HTML no site + nomes via API ``Item/:id``.
+
+    A API oficial não expõe pesquisa por nome; os IDs vêm da tabela HTML e cada
+    candidato é validado/enriquecido com ``fetch_item``. Devolve todos os
+    candidatos nomeados (até *html_limit*) para o caller escolher o melhor match.
+    """
+    key = resolve_api_key(api_key)
+    if not key:
+        return []
+
+    html_rows = search_items_html(
+        query,
+        server="bRO",
+        limit=html_limit,
+        accept_language=accept_language or DEFAULT_ITEM_SEARCH_LANG,
+        timeout=timeout,
+    )
+    if not html_rows:
+        return []
+
+    servers = _dp_item_servers(server)
+    out: List[Dict[str, Any]] = []
+    seen: set[int] = set()
+    for row in html_rows:
+        try:
+            iid = int(row.get("id"))
+        except (TypeError, ValueError):
+            continue
+        if iid in seen or iid <= 0:
+            continue
+        seen.add(iid)
+
+        name = str(row.get("name") or "").strip()
+        if not name:
+            name = _fetch_item_display_name(
+                iid,
+                api_key=key,
+                servers=servers,
+                accept_language=accept_language,
+                timeout=timeout,
+            )
+        if not name:
+            continue
+        out.append({"id": iid, "name": name})
+    return out
 
 
 def database_get(

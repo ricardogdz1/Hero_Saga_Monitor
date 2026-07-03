@@ -1,0 +1,175 @@
+{
+  "bio": {
+    "nome": "Reputação Bio (Bio 5 Hard)",
+    "max_level": 3,
+    "bonus_per_level_pct": 2,
+    "levels": [
+      {
+        "level": 0,
+        "bonus_pct": 0,
+        "label": "Nível 0"
+      },
+      {
+        "level": 1,
+        "bonus_pct": 2,
+        "label": "Nível 1 (+2% drop)"
+      },
+      {
+        "level": 2,
+        "bonus_pct": 4,
+        "label": "Nível 2 (+4% drop)"
+      },
+      {
+        "level": 3,
+        "bonus_pct": 6,
+        "label": "Nível 3 (+6% drop)"
+      }
+    ]
+  },
+  "cheffenia": {
+    "nome": "Reputação Cheffênia (Hard)",
+    "max_level": 3,
+    "bonus_per_level_pct": 2,
+    "levels": [
+      {
+        "level": 0,
+        "bonus_pct": 0,
+        "label": "Nível 0"
+      },
+      {
+        "level": 1,
+        "bonus_pct": 2,
+        "label": "Nível 1 (+2% drop)"
+      },
+      {
+        "level": 2,
+        "bonus_pct": 4,
+        "label": "Nível 2 (+4% drop)"
+      },
+      {
+        "level": 3,
+        "bonus_pct": 6,
+        "label": "Nível 3 (+6% drop)"
+      }
+    ]
+  },
+  "temporada": {
+    "nome": "Reputação Temporada",
+    "max_level": 4,
+    "bonus_per_level_pct": 2,
+    "levels": [
+      {
+        "level": 0,
+        "bonus_pct": 0,
+        "label": "Nível 0"
+      },
+      {
+        "level": 1,
+        "bonus_pct": 2,
+        "label": "Nível 1 (+2% drop)"
+      },
+      {
+        "level": 2,
+        "bonus_pct": 4,
+        "label": "Nível 2 (+4% drop)"
+      },
+      {
+        "level": 3,
+        "bonus_pct": 6,
+        "label": "Nível 3 (+6% drop)"
+      },
+      {
+        "level": 4,
+        "bonus_pct": 8,
+        "label": "Nível 4 (+8% drop)"
+      }
+    ]
+  },
+  "ascensao": {
+    "nome": "Ascensão",
+    "max_level": 15,
+    "bonus_per_level_pct": 4,
+    "levels": [
+      {
+        "level": 0,
+        "bonus_pct": 0,
+        "label": "Nível 0"
+      },
+      {
+        "level": 1,
+        "bonus_pct": 4,
+        "label": "Nível 1 (+4% drop)"
+      },
+      {
+        "level": 2,
+        "bonus_pct": 8,
+        "label": "Nível 2 (+8% drop)"
+      },
+      {
+        "level": 3,
+        "bonus_pct": 12,
+        "label": "Nível 3 (+12% drop)"
+      },
+      {
+        "level": 4,
+        "bonus_pct": 16,
+        "label": "Nível 4 (+16% drop)"
+      },
+      {
+        "level": 5,
+        "bonus_pct": 20,
+        "label": "Nível 5 (+20% drop)"
+      },
+      {
+        "level": 6,
+        "bonus_pct": 24,
+        "label": "Nível 6 (+24% drop)"
+      },
+      {
+        "level": 7,
+        "bonus_pct": 28,
+        "label": "Nível 7 (+28% drop)"
+      },
+      {
+        "level": 8,
+        "bonus_pct": 32,
+        "label": "Nível 8 (+32% drop)"
+      },
+      {
+        "level": 9,
+        "bonus_pct": 36,
+        "label": "Nível 9 (+36% drop)"
+      },
+      {
+        "level": 10,
+        "bonus_pct": 40,
+        "label": "Nível 10 (+40% drop)"
+      },
+      {
+        "level": 11,
+        "bonus_pct": 44,
+        "label": "Nível 11 (+44% drop)"
+      },
+      {
+        "level": 12,
+        "bonus_pct": 48,
+        "label": "Nível 12 (+48% drop)"
+      },
+      {
+        "level": 13,
+        "bonus_pct": 52,
+        "label": "Nível 13 (+52% drop)"
+      },
+      {
+        "level": 14,
+        "bonus_pct": 56,
+        "label": "Nível 14 (+56% drop)"
+      },
+      {
+        "level": 15,
+        "bonus_pct": 60,
+        "label": "Nível 15 (+60% drop)"
+      }
+    ]
+  }
+}

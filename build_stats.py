@@ -13,13 +13,13 @@ from typing import Dict, List, Tuple
 PRIMARY_STATS: Tuple[str, ...] = ("STR", "AGI", "VIT", "INT", "DEX", "LUK")
 
 # Editáveis — janela «Talentos»
-TALENT_STATS: Tuple[str, ...] = ("POW", "STA", "WIS", "SPL", "CON", "CRT", "CRATE")
+TALENT_STATS: Tuple[str, ...] = ("POW", "STA", "WIS", "SPL", "CON", "CRT")
 
 # Só leitura — derivadas de «Atributos»
 DERIVED_ATTR_STATS: Tuple[str, ...] = ("ATK", "MATK", "HIT", "CRIT", "DEF", "MDEF", "FLEE", "ASPD")
 
 # Só leitura — derivadas de «Talentos»
-DERIVED_TALENT_STATS: Tuple[str, ...] = ("PATK", "SMATK", "HPLUS", "RES", "MRES")
+DERIVED_TALENT_STATS: Tuple[str, ...] = ("PATK", "SMATK", "HPLUS", "CRATE", "RES", "MRES")
 
 ALL_EQUIP_KEYS: Tuple[str, ...] = PRIMARY_STATS + TALENT_STATS + DERIVED_ATTR_STATS + DERIVED_TALENT_STATS
 
@@ -162,6 +162,13 @@ def normalize_item_stats(raw) -> dict:
                 out["talents"][k] = int(float(raw["talents"].get(k) or 0))
             except (TypeError, ValueError):
                 pass
+        for leg_key in ("CRATE", "c_rate"):
+            try:
+                leg_crate = int(float(raw["talents"].get(leg_key) or 0))
+                if leg_crate:
+                    out["derived_talent"]["CRATE"] = out["derived_talent"].get("CRATE", 0) + leg_crate
+            except (TypeError, ValueError):
+                pass
     for dk in ("derived_attr", "derived_talent"):
         if isinstance(raw.get(dk), dict):
             keys = DERIVED_ATTR_STATS if dk == "derived_attr" else DERIVED_TALENT_STATS
@@ -262,10 +269,7 @@ def normalize_base_stats(raw) -> dict:
     if isinstance(tal, dict):
         for k in TALENT_STATS:
             try:
-                val = tal.get(k)
-                if k == "CRATE" and val in (None, "") and tal.get("c_rate") not in (None, ""):
-                    val = tal.get("c_rate")
-                out_t[k] = max(0, int(float(val or 0)))
+                out_t[k] = max(0, int(float(tal.get(k) or 0)))
             except (TypeError, ValueError):
                 out_t[k] = 0
     if isinstance(leg, dict) and leg.get("POW"):
@@ -488,6 +492,7 @@ def compute_derived_display(
     patk = _flo(con_t / 5) + int(eq["derived_talent"].get("PATK") or 0)
     smatk = _flo(con_t / 5) + int(eq["derived_talent"].get("SMATK") or 0)
     hplus = crt_t + int(eq["derived_talent"].get("HPLUS") or 0)
+    crate = _flo(crt_t / 3) + int(eq["derived_talent"].get("CRATE") or 0)
     res = sta_t + int(eq["derived_talent"].get("RES") or 0)
     mres = wis_t + int(eq["derived_talent"].get("MRES") or 0)
 
@@ -506,6 +511,7 @@ def compute_derived_display(
             "PATK": {"base": patk, "bonus": 0},
             "SMATK": {"base": smatk, "bonus": 0},
             "HPLUS": {"base": hplus, "bonus": 0},
+            "CRATE": {"base": crate, "bonus": 0},
             "RES": {"base": res, "bonus": 0},
             "MRES": {"base": mres, "bonus": 0},
         },

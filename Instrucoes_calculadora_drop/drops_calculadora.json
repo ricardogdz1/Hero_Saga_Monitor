@@ -1,0 +1,3377 @@
+{
+  "conteudos": [
+    {
+      "id": "cheffenia",
+      "nome": "Cheffênia",
+      "secoes": [
+        {
+          "titulo": "Drops por Dificuldade (moeda)",
+          "itens": [
+            {
+              "secao": "Drops por Dificuldade (moeda)",
+              "nome": "Moeda Cheff. Normal",
+              "contexto": "Normal",
+              "chance_pct": 20.0
+            },
+            {
+              "secao": "Drops por Dificuldade (moeda)",
+              "nome": "Moeda Cheff. Normal",
+              "contexto": "Intermediate",
+              "chance_pct": 30.0
+            }
+          ]
+        },
+        {
+          "titulo": "Álbum de Cartas",
+          "itens": [
+            {
+              "secao": "Álbum de Cartas",
+              "nome": "Álbum Mágico de Cartas [MVP]",
+              "chance_pct": 0.01,
+              "contexto": "Extreme"
+            }
+          ]
+        },
+        {
+          "titulo": "Conteúdo do Álbum [MVP]",
+          "itens": [
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Senhor das Trevas"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Senhor das Trevas"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Flor do Luar"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Flor do Luar"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Ktullanux"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Ktullanux"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Amon-Ra"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Amon-Ra"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Osíris"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Osíris"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Ifrit"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Ifrit"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Senhor dos Orcs"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Senhor dos Orcs"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Freeoni"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Freeoni"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Doppelganger"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Doppelganger"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Valkyrie Randgris"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Valkyrie Randgris"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Samurai Encarnado"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Samurai Encarnado"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Vesper"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Vesper"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Belzebu"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Belzebu"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Espadachim Egnigem"
+              },
+              "chance_pct": 6.31,
+              "nome": "Carta Espadachim Egnigem"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Orc Herói"
+              },
+              "chance_pct": 4.0,
+              "nome": "Carta Orc Herói"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Lorde Seyren"
+              },
+              "chance_pct": 3.6,
+              "nome": "Carta Lorde Seyren"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Naght Sieger"
+              },
+              "chance_pct": 2.0,
+              "nome": "Carta Naght Sieger"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Memória de Thanatos"
+              },
+              "chance_pct": 1.0,
+              "nome": "Carta Memória de Thanatos"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MVP]",
+              "extra": {
+                "Carta": "Carta Drake"
+              },
+              "chance_pct": 1.0,
+              "nome": "Carta Drake"
+            }
+          ]
+        },
+        {
+          "titulo": "Hard - Tier A (rotativo)",
+          "itens": [
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Thanos Magic Helmet-LT [1]",
+              "chance_pct": 0.006
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Thanos Fighter Helmet-LT [1]",
+              "chance_pct": 0.006
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Thanos Warrior Helmet-LT [1]",
+              "chance_pct": 0.006
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Thanos Shooter Helmet-LT [1]",
+              "chance_pct": 0.006
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Tiger King Doll Hat-LT [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Meio"
+              },
+              "nome": "Asinhas Discretas [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Meio"
+              },
+              "nome": "Herança Real",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Baixo"
+              },
+              "nome": "Cachecol Camuflado",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Baixo"
+              },
+              "nome": "Twinhead Dragon Scale",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Armas"
+              },
+              "nome": "Pluma de Fênix [1]",
+              "chance_pct": 0.006
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Armaduras"
+              },
+              "nome": "Armadura do Mensageiro [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Armaduras"
+              },
+              "nome": "Armadura Eclipse [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Armaduras"
+              },
+              "nome": "Twinhead Dragonmail [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Bata de Etran [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Mikoshi Sagrado [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Arrogant Thoughtform Shoes",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Grevas de Platina",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Thought Ring [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Solomon's Pendant",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Memorável Anel Rústico [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Old Detachment Ring",
+              "chance_pct": 0.005
+            }
+          ]
+        },
+        {
+          "titulo": "Hard - Tier B (rotativo)",
+          "itens": [
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Cocar do Orc Herói [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Violeta Dourada",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Red Baby Dragon-LT [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Armas"
+              },
+              "nome": "Cauda Arco-Íris",
+              "chance_pct": 0.002
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Armas"
+              },
+              "nome": "Cauda de Gato Reluzente [1]",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Armaduras"
+              },
+              "nome": "Robe da Graça Divina [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Armaduras"
+              },
+              "nome": "Janus Armor [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Fada do Éden [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Manto do Barão [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Manto da Luz do Sol [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Sapatilhas de Algodão",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Sapatos Sagrados",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Destroy World Boots",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Botas de Guivra [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Biolo) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Cardinal) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Abyss Chaser) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Arch Mage) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Dragon Knight) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Elemental Master) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Hyper Novice) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Imperial Guard) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Inquisitor) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Meister) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Night Watch) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Shadow Cross) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Shinkiro & Shiranui) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Sky Emperor) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Soul Ascetic) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Spirit Handler) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Troubadour / Trouvere) [1]",
+              "chance_pct": 0.004
+            },
+            {
+              "secao": "Hard - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Heroic Token (Windhawk) [1]",
+              "chance_pct": 0.004
+            }
+          ]
+        },
+        {
+          "titulo": "Extreme - Tier A (rotativo)",
+          "itens": [
+            {
+              "secao": "Extreme - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Archbishop) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Sura) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Warlock) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Baixo"
+              },
+              "nome": "Fones de Angeling",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Extreme - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Baixo"
+              },
+              "nome": "Fones de Deviling",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Extreme - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Sapatos Flutuantes [1]",
+              "chance_pct": 0.002
+            },
+            {
+              "secao": "Extreme - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Casaco Comemorativo Dourado",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Extreme - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Escudos"
+              },
+              "nome": "Escudo de Batalha [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Extreme - Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Escudos"
+              },
+              "nome": "God-Devouring Demonic Shield-LT [1]",
+              "chance_pct": 0.001
+            }
+          ]
+        },
+        {
+          "titulo": "Extreme - Tier B (rotativo)",
+          "itens": [
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Rebelion) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Genetic) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Mechanic) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Mintrel & Wanderer) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Rune Knight) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Sorcerer) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Guillotine Cross) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Royal Guard) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Ranger) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Shadow Chaser) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Summoner) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Soul Reaper) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Star Emperor) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith (Kagerou & Oboro) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Dual Shadow World Cloak",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Extreme - Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Salto Alto Elegante [1]",
+              "chance_pct": 0.002
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tumba_da_honra",
+      "nome": "Tumba da Honra",
+      "secoes": [
+        {
+          "titulo": "Drops por Dificuldade (moeda)",
+          "itens": [
+            {
+              "secao": "Drops por Dificuldade (moeda)",
+              "nome": "Essencia de Bio 5 Normal",
+              "contexto": "Normal",
+              "chance_pct": 20.0
+            },
+            {
+              "secao": "Drops por Dificuldade (moeda)",
+              "nome": "Essencia de Bio 5 Normal",
+              "contexto": "Intermediate",
+              "chance_pct": 40.0
+            }
+          ]
+        },
+        {
+          "titulo": "Álbum de Cartas",
+          "itens": [
+            {
+              "secao": "Álbum de Cartas",
+              "nome": "Álbum Mágico de Cartas [MvP] [Bio 5]",
+              "chance_pct": 0.01,
+              "contexto": "Extreme"
+            }
+          ]
+        },
+        {
+          "titulo": "Conteúdo do Álbum [MvP] [Bio 5]",
+          "itens": [
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Bioquímico Flamel"
+              },
+              "chance_pct": null,
+              "nome": "Carta Bioquímico Flamel"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Trovador Alphoccio"
+              },
+              "chance_pct": null,
+              "nome": "Carta Trovador Alphoccio"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Musa Trentini"
+              },
+              "chance_pct": null,
+              "nome": "Carta Musa Trentini"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Arcebispa Margaretha"
+              },
+              "chance_pct": null,
+              "nome": "Carta Arcebispa Margaretha"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Mecânico Howard"
+              },
+              "chance_pct": null,
+              "nome": "Carta Mecânico Howard"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Arcana Kathryne"
+              },
+              "chance_pct": null,
+              "nome": "Carta Arcana Kathryne"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Guardião Real Randel"
+              },
+              "chance_pct": null,
+              "nome": "Carta Guardião Real Randel"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Feiticeira Celia"
+              },
+              "chance_pct": null,
+              "nome": "Carta Feiticeira Celia"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Shura Chen"
+              },
+              "chance_pct": null,
+              "nome": "Carta Shura Chen"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Renegada Gertie"
+              },
+              "chance_pct": null,
+              "nome": "Carta Renegada Gertie"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Sicário Eremes"
+              },
+              "chance_pct": null,
+              "nome": "Carta Sicário Eremes"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Sentinela Cecil"
+              },
+              "chance_pct": null,
+              "nome": "Carta Sentinela Cecil"
+            },
+            {
+              "secao": "Conteúdo do Álbum [MvP] [Bio 5]",
+              "extra": {
+                "Carta": "Carta Cavaleiro Rúnico Seyren"
+              },
+              "chance_pct": null,
+              "nome": "Carta Cavaleiro Rúnico Seyren"
+            }
+          ]
+        },
+        {
+          "titulo": "Hard — Tier A (rotativo)",
+          "itens": [
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Rebirth Circlet [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Chapéu do Éden [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Meio"
+              },
+              "nome": "Tiara de Asmodeus [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Meio"
+              },
+              "nome": "Orelhas Fantasmagóricas",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Armaduras"
+              },
+              "nome": "Bata de Operação Branca [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Armaduras"
+              },
+              "nome": "Peitoral Automático [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Armaduras"
+              },
+              "nome": "Possessão Elemental [1]",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Jetpack Robusta",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Capa Ajeitadinha",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Sapatos do Perseguidor",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Botas do Caçador",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Pegasus Shoes [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Armagedon [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Scrap Remodel Shoes [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Fake Alloy Pot [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Anel YSF01 [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Infinity Chip MAX [1]",
+              "chance_pct": 0.001
+            }
+          ]
+        },
+        {
+          "titulo": "Hard — Tier B (rotativo)",
+          "itens": [
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Coroa de Jasper [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Coroa Brilhante Adornada",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Awaking Bloom [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Officer's Hat-LT [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Meio"
+              },
+              "nome": "Baby Deviling",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Baixo"
+              },
+              "nome": "Manto do Herói",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Baixo"
+              },
+              "nome": "Lord of Royals",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Baixo"
+              },
+              "nome": "Arbitrator Shawl",
+              "chance_pct": 0.002
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Armas"
+              },
+              "nome": "Aquarius Staff [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Armas"
+              },
+              "nome": "Libra Krasnaya [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Armaduras"
+              },
+              "nome": "Vestido da Bruxa [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Capa de Necromante [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Manto De Fafnir [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Botas de Teste",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Mamaragan",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Hard — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Luvas de Proteção [1]",
+              "chance_pct": 0.004
+            }
+          ]
+        },
+        {
+          "titulo": "Extreme — Tier A (rotativo)",
+          "itens": [
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Kagerou & Oboro) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Rebelion) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Soul Reaper) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Star Emperor) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Summoner) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Genetic) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Mechanic) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Mintrel & Wanderer) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Rune Knight) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Sorcerer) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Escudos"
+              },
+              "nome": "Auto Shield A [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Escudos"
+              },
+              "nome": "Escudo da Fênix [1]",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Valkyrie Curse Blight [1]",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Capas"
+              },
+              "nome": "Manto do Guardião Morto",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Acessórios"
+              },
+              "nome": "Gray Wolf Armguard",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier A (rotativo)",
+              "extra": {
+                "Categoria": "Armas"
+              },
+              "nome": "Lança Soberana [1]",
+              "chance_pct": 0.007
+            }
+          ]
+        },
+        {
+          "titulo": "Extreme — Tier B (rotativo)",
+          "itens": [
+            {
+              "secao": "Extreme — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Guillotine Cross) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Royal Guard) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Ranger) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Shadow Chaser) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Archbishop) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Sura) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Topo"
+              },
+              "nome": "Helm of Faith II (Warlock) [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Meio"
+              },
+              "nome": "Fones COR [1]",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Extreme — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Hats Baixo"
+              },
+              "nome": "Cachimbo antigo",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Extreme — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Mindform Shoes of Indecisiveness",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Extreme — Tier B (rotativo)",
+              "extra": {
+                "Categoria": "Sapatos"
+              },
+              "nome": "Grevas do Poder",
+              "chance_pct": 0.001
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caminho_do_iniciante",
+      "nome": "Caminho do Iniciante",
+      "secoes": [
+        {
+          "titulo": "Utilitários",
+          "itens": [
+            {
+              "secao": "Utilitários",
+              "nome": "Ticket Sombrio [Geral]",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Moeda do Iniciante",
+              "chance_pct": 5.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Fragmento de Experimento",
+              "chance_pct": 5.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Arquivos de Biopesquisa",
+              "chance_pct": 5.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Tanque Velho",
+              "chance_pct": 3.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Bloco de Sucata",
+              "chance_pct": 3.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Barmeal Ticket",
+              "chance_pct": 3.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Ticket Sombrio [Habilidades]",
+              "chance_pct": 2.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Ticket Sombrio [Classes]",
+              "chance_pct": 2.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Dynite",
+              "chance_pct": 2.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Fragment of Fate",
+              "chance_pct": 2.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Fragment of Sin",
+              "chance_pct": 2.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Cx. Areia Estelar da Bruxa [400]",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Arma Danificada",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Mineas",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Caixa de Armas Ancestral",
+              "chance_pct": 0.2
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Automatic Module Box",
+              "chance_pct": 0.1
+            }
+          ]
+        },
+        {
+          "titulo": "Drops Exclusivos dos MVPs",
+          "itens": [
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Botas do Lutador Marcial [1]",
+              "contexto": "Todos",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Lâmina Maligna [3]",
+              "contexto": "Todos",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Lâmina Mágica [3]",
+              "contexto": "Todos",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Lâmina Máxima [3]",
+              "contexto": "Todos",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Talismã Yin Yang [1]",
+              "contexto": "Todos",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Changeable Magic Cape [1]",
+              "contexto": "Todos",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Pijaminha de Tubarão [1]",
+              "contexto": "Todos",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Demon Hunting Shield [1]",
+              "contexto": "Todos",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Beast's Leather Shoes [1]",
+              "contexto": "Todos",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Anel Caveira [1]",
+              "contexto": "Todos",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Quepe Humilde [1]",
+              "contexto": "Todos",
+              "chance_pct": 10.0
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Bata de Paracelsus",
+              "contexto": "Orc Herói",
+              "chance_pct": 0.03
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Fada do Éden [1]",
+              "contexto": "Freeoni",
+              "chance_pct": 0.03
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Escudo de Batalha [1]",
+              "contexto": "General Tartaruga",
+              "chance_pct": 0.03
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Capa Ajeitadinha",
+              "contexto": "Maya",
+              "chance_pct": 0.03
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Mikoshi Sagrado [1]",
+              "contexto": "Faraó",
+              "chance_pct": 0.03
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Sapatos Sagrados",
+              "contexto": "Cavaleiro da Tempestade",
+              "chance_pct": 0.03
+            },
+            {
+              "secao": "Drops Exclusivos dos MVPs",
+              "nome": "Armadura do Mensageiro [1]",
+              "contexto": "Samurai Encarnado",
+              "chance_pct": 0.03
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "villa_of_zeny",
+      "nome": "Villa Of Zeny",
+      "secoes": [
+        {
+          "titulo": "Drops",
+          "itens": [
+            {
+              "secao": "Drops",
+              "nome": "Bolsa de Zenys",
+              "contexto": "Normal",
+              "chance_pct": 13.2,
+              "extra": {
+                "Observação": "Drop em grupo; chance individual por membro. Concede 13kk–32,5kk Zeny"
+              }
+            },
+            {
+              "secao": "Drops",
+              "nome": "Bolsa de Zenys",
+              "contexto": "Advanced",
+              "chance_pct": 16.7,
+              "extra": {
+                "Observação": "Drop em grupo; chance individual por membro"
+              }
+            },
+            {
+              "secao": "Drops",
+              "nome": "Chave Villa Of Zeny",
+              "contexto": "Normal",
+              "chance_pct": 2.0,
+              "extra": {
+                "Observação": "Drop em grupo; chance individual por membro. Requerida para modo Advanced (consumida do líder)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ascensao_somatologica",
+      "nome": "Ascensão Somatológica",
+      "secoes": [
+        {
+          "titulo": "Drops",
+          "itens": [
+            {
+              "secao": "Drops",
+              "nome": "Essência Sombria",
+              "extra": {
+                "Monstro": "Todos os MVPs (exceto Dr. Soren Valheit)",
+                "Observação": "—"
+              },
+              "chance_pct": 1.0
+            },
+            {
+              "secao": "Drops",
+              "nome": "Bênção do Ferreiro (40x)",
+              "extra": {
+                "Monstro": "Dr. Soren Valheit",
+                "Observação": "MVP principal; respawn 8h; Drop Party **não** aplicado"
+              },
+              "chance_pct": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "campo_do_minerador",
+      "nome": "Campo do Minerador",
+      "secoes": [
+        {
+          "titulo": "Drops — Minérios",
+          "itens": [
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Pergaminho Brilhante da Proteção",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Elunium Enriquecido",
+              "chance_pct": 0.5
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Elunium Perfeito",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Mega-Elunium",
+              "chance_pct": 0.08
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Carnium Perfeito",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Etherium Enriquecido",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Etherium Perfeito",
+              "chance_pct": 0.2
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Carnium Etéreo Perfeito",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Carnium Etéreo",
+              "chance_pct": 0.01
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Oridecon Enriquecido",
+              "chance_pct": 0.5
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Oridecon Perfeito",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Omni-Oridecon",
+              "chance_pct": 0.08
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Bradium Perfeito",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Enriched Etherdeocon",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Etherdeocon Perfeito",
+              "chance_pct": 0.2
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Bradium Etéreo Perfeito",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Bradium Etéreo",
+              "chance_pct": 0.01
+            },
+            {
+              "secao": "Drops — Minérios",
+              "nome": "Bênção do Ferreiro",
+              "chance_pct": 0.04
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jardim_dos_elementais",
+      "nome": "Jardim dos Elementais",
+      "secoes": [
+        {
+          "titulo": "Utilitários",
+          "itens": [
+            {
+              "secao": "Utilitários",
+              "nome": "Runa Corrompida",
+              "chance_pct": 1.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Pergaminho Brilhante da Proteção",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Cx. Areia Estelar da Bruxa [400]",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Pedra Consagrada",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Arcanium",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Mythril",
+              "chance_pct": 0.05
+            }
+          ]
+        },
+        {
+          "titulo": "Tier A (rotativo)",
+          "itens": [
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Cosmic Star Blessing",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Overdrive Rampage",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Braço Mecânico de Força",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Luva de Resistência Química",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Anel de Artemis",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Talismã de Selamento dos Cinco Elementos",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Moeda de Ouro do Duelista",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Impulsionador de Elétrons",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Establish",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Lord of Elemental",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Anel Cardinal",
+              "chance_pct": 0.003
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Into The Abyss",
+              "chance_pct": 0.003
+            }
+          ]
+        },
+        {
+          "titulo": "Tier B (rotativo)",
+          "itens": [
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Chapéu de Marin Fofo",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Fita de Coelho da Paixão",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Coroa Espiritual",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Steamroller",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Chapéu de Bruxa Gato Branco",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Wolf Rayet",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Clockwise",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Boné de Dois Tons",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Chapéu de Orelha de Esquilo (Branco)",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Chapéu de Fita Listrada",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Véu do Inquisidor",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Peônia Chique",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Gorro de Malha de Gato Selvagem (Branco)",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Chapéu do Brasão Invencível",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Chapéu de Altair",
+              "chance_pct": 0.005
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jardim_sagrado",
+      "nome": "Jardim Sagrado",
+      "secoes": [
+        {
+          "titulo": "Utilitários",
+          "itens": [
+            {
+              "secao": "Utilitários",
+              "nome": "Pó de Éter",
+              "chance_pct": 3.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Amethyst Fragment",
+              "chance_pct": 2.0
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Pergaminho Brilhante da Proteção",
+              "chance_pct": 0.5
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Ticket Sombrio [Avançado]",
+              "chance_pct": 0.4
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Pó de Éter Abençoado",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Gema Éter",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Utilitários",
+              "nome": "Cx. Areia Estelar da Bruxa [400]",
+              "chance_pct": 0.05
+            }
+          ]
+        },
+        {
+          "titulo": "Tier A (rotativo)",
+          "itens": [
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Corruption Boots",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Ring of Silver Claw [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Boitata Hat [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Servo Leal de Morroc",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Balão de Arcanjo",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Festa do Fantasma Gritante [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Feather Shield-LT [1]",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Pirate Captain's Coat [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Tristan Imperial Cape-LT [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Agressor Vazio [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Botas de diamante de dois lados [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "KenZen Ichinyo [1]",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Black Winged Apostle",
+              "chance_pct": 0.001
+            },
+            {
+              "secao": "Tier A (rotativo)",
+              "nome": "Smiling Eyes [1]",
+              "chance_pct": 0.001
+            }
+          ]
+        },
+        {
+          "titulo": "Tier B (rotativo)",
+          "itens": [
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Robe Chique [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Capa das Fadas [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Cloak of Night Spirits [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Cursed Devils Manteau [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Judgment Resolution Boots-LT [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Anel dos 5 Elementos [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Smokie Transformation Leaf-LT [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Penteado de Sindel",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Astraea Shoes-LT [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Dissonance Break Pick [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Death Bringer [1]",
+              "chance_pct": 0.009
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Coroa da Penitência [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Variante do Espaço-Tempo",
+              "chance_pct": 0.007
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Survivor's Circlet-LT [1]",
+              "chance_pct": 0.005
+            },
+            {
+              "secao": "Tier B (rotativo)",
+              "nome": "Survivor's Orb-LT",
+              "chance_pct": 0.005
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "legiao",
+      "nome": "Legião",
+      "secoes": [
+        {
+          "titulo": "Minérios (todos os mapas)",
+          "itens": [
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Elunium Enriquecido",
+              "chance_pct": 0.2
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Elunium Perfeito",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Mega-Elunium",
+              "chance_pct": 0.02
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Carnium Perfeito",
+              "chance_pct": 0.05
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Etherium Enriquecido",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Etherium Perfeito",
+              "chance_pct": 0.07
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Carnium Etéreo Perfeito",
+              "chance_pct": 0.05
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Carnium Etéreo",
+              "chance_pct": 0.01
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Oridecon Enriquecido",
+              "chance_pct": 0.2
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Oridecon Perfeito",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Omni-Oridecon",
+              "chance_pct": 0.02
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Bradium Perfeito",
+              "chance_pct": 0.05
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Enriched Etherdeocon",
+              "chance_pct": 0.1
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Etherdeocon Perfeito",
+              "chance_pct": 0.07
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Bradium Etéreo Perfeito",
+              "chance_pct": 0.05
+            },
+            {
+              "secao": "Minérios (todos os mapas)",
+              "nome": "Bradium Etéreo",
+              "chance_pct": 0.01
+            }
+          ]
+        },
+        {
+          "titulo": "Drops por mapa",
+          "itens": [
+            {
+              "secao": "Drops por mapa",
+              "nome": "Fragmento da Fúria",
+              "contexto": "Furious",
+              "chance_pct": 1.0
+            },
+            {
+              "secao": "Drops por mapa",
+              "nome": "Weapon Upgrade Stone (Lower)",
+              "contexto": "Furious",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Drops por mapa",
+              "nome": "Armor Upgrade Stone (Lower)",
+              "contexto": "Furious",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Drops por mapa",
+              "nome": "Lasca Maligna",
+              "contexto": "Legião do Mal",
+              "chance_pct": 1.0
+            },
+            {
+              "secao": "Drops por mapa",
+              "nome": "Acc Upgrade Stone (Lower)",
+              "contexto": "Legião do Mal",
+              "chance_pct": 0.3
+            },
+            {
+              "secao": "Drops por mapa",
+              "nome": "Lasca Abençoada",
+              "contexto": "Legião do Bem",
+              "chance_pct": 1.0
+            },
+            {
+              "secao": "Drops por mapa",
+              "nome": "Acc Upgrade Stone (Lower)",
+              "contexto": "Legião do Bem",
+              "chance_pct": 0.3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trilha_do_heroi",
+      "nome": "Trilha do Herói",
+      "secoes": [
+        {
+          "titulo": "Normal — Utilitários",
+          "itens": [
+            {
+              "secao": "Normal — Utilitários",
+              "nome": "Mineas [100%]",
+              "chances_por_andar": {
+                "1º Andar": 100.0,
+                "2º Andar": 100.0,
+                "3º Andar": 100.0
+              },
+              "quantidades_por_andar": {
+                "1º Andar": 5,
+                "2º Andar": 7,
+                "3º Andar": 10
+              }
+            },
+            {
+              "secao": "Normal — Utilitários",
+              "nome": "Varmeal Ticket [100%]",
+              "chances_por_andar": {
+                "1º Andar": 100.0,
+                "2º Andar": 100.0,
+                "3º Andar": 100.0
+              },
+              "quantidades_por_andar": {
+                "1º Andar": 10,
+                "2º Andar": 15,
+                "3º Andar": 20
+              }
+            },
+            {
+              "secao": "Normal — Utilitários",
+              "nome": "2x Poção Inifinita [NN]",
+              "chances_por_andar": {
+                "1º Andar": 50.0,
+                "2º Andar": 75.0,
+                "3º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Normal — Utilitários",
+              "nome": "2x Poção Ilimitada [NN]",
+              "chances_por_andar": {
+                "1º Andar": 50.0,
+                "2º Andar": 75.0,
+                "3º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Normal — Utilitários",
+              "nome": "1x Poção de AP [NN]",
+              "chances_por_andar": {
+                "1º Andar": 50.0,
+                "2º Andar": 75.0,
+                "3º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Normal — Utilitários",
+              "nome": "1x Cx. Areia Estelar da Bruxa [400]",
+              "chances_por_andar": {
+                "1º Andar": 50.0,
+                "2º Andar": 75.0,
+                "3º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Normal — Utilitários",
+              "nome": "1x Bênção do Ferreiro",
+              "chances_por_andar": {
+                "1º Andar": 50.0,
+                "2º Andar": 75.0,
+                "3º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Normal — Utilitários",
+              "nome": "5x Semente de Yggdrasil",
+              "chances_por_andar": {
+                "1º Andar": 50.0,
+                "2º Andar": 75.0,
+                "3º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Normal — Utilitários",
+              "nome": "1x Contrato do Herói",
+              "chances_por_andar": {
+                "1º Andar": 0.1,
+                "2º Andar": 0.1,
+                "3º Andar": 0.1
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Intermediate — Utilitários",
+          "itens": [
+            {
+              "secao": "Intermediate — Utilitários",
+              "nome": "Mineas [100%]",
+              "chances_por_andar": {
+                "4º Andar": 100.0,
+                "5º Andar": 100.0,
+                "6º Andar": 100.0
+              },
+              "quantidades_por_andar": {
+                "4º Andar": 12,
+                "5º Andar": 15,
+                "6º Andar": 20
+              }
+            },
+            {
+              "secao": "Intermediate — Utilitários",
+              "nome": "Snow Flower Petal [100%]",
+              "chances_por_andar": {
+                "4º Andar": 100.0,
+                "5º Andar": 100.0,
+                "6º Andar": 100.0
+              },
+              "quantidades_por_andar": {
+                "4º Andar": 3,
+                "5º Andar": 6,
+                "6º Andar": 10
+              }
+            },
+            {
+              "secao": "Intermediate — Utilitários",
+              "nome": "1x Bolsa de Zenys",
+              "chances_por_andar": {
+                "4º Andar": 2.0,
+                "5º Andar": 5.0,
+                "6º Andar": 7.0
+              }
+            },
+            {
+              "secao": "Intermediate — Utilitários",
+              "nome": "3x Poção Inifinita [NN]",
+              "chances_por_andar": {
+                "4º Andar": 50.0,
+                "5º Andar": 75.0,
+                "6º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Intermediate — Utilitários",
+              "nome": "3x Poção Ilimitada [NN]",
+              "chances_por_andar": {
+                "4º Andar": 50.0,
+                "5º Andar": 75.0,
+                "6º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Intermediate — Utilitários",
+              "nome": "2x Poção de AP [NN]",
+              "chances_por_andar": {
+                "4º Andar": 50.0,
+                "5º Andar": 75.0,
+                "6º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Intermediate — Utilitários",
+              "nome": "2x Bênção do Ferreiro",
+              "chances_por_andar": {
+                "4º Andar": 50.0,
+                "5º Andar": 75.0,
+                "6º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Intermediate — Utilitários",
+              "nome": "10x Semente de Yggdrasil",
+              "chances_por_andar": {
+                "4º Andar": 50.0,
+                "5º Andar": 75.0,
+                "6º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Intermediate — Utilitários",
+              "nome": "1x Contrato do Herói",
+              "chances_por_andar": {
+                "4º Andar": 0.1,
+                "5º Andar": 0.1,
+                "6º Andar": 0.1
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Intermediate — Equipamentos",
+          "itens": [
+            {
+              "secao": "Intermediate — Equipamentos",
+              "nome": "Memorias do 21° Aniversario",
+              "chances_por_andar": {
+                "4º Andar": 0.5,
+                "5º Andar": 0.7,
+                "6º Andar": 0.9
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Hard — Utilitários",
+          "itens": [
+            {
+              "secao": "Hard — Utilitários",
+              "nome": "1x Bolsa de Zenys",
+              "chances_por_andar": {
+                "7º Andar": 15.0,
+                "8º Andar": 15.0,
+                "9º Andar": 15.0
+              }
+            },
+            {
+              "secao": "Hard — Utilitários",
+              "nome": "3x Poção Inifinita [NN]",
+              "chances_por_andar": {
+                "7º Andar": 50.0,
+                "8º Andar": 75.0,
+                "9º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Hard — Utilitários",
+              "nome": "3x Poção Ilimitada [NN]",
+              "chances_por_andar": {
+                "7º Andar": 50.0,
+                "8º Andar": 75.0,
+                "9º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Hard — Utilitários",
+              "nome": "3x Poção de AP [NN]",
+              "chances_por_andar": {
+                "7º Andar": 50.0,
+                "8º Andar": 75.0,
+                "9º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Hard — Utilitários",
+              "nome": "3x Bênção do Ferreiro",
+              "chances_por_andar": {
+                "7º Andar": 50.0,
+                "8º Andar": 75.0,
+                "9º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Hard — Utilitários",
+              "nome": "15x Semente de Yggdrasil",
+              "chances_por_andar": {
+                "7º Andar": 50.0,
+                "8º Andar": 75.0,
+                "9º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Hard — Utilitários",
+              "nome": "1x Contrato do Herói",
+              "chances_por_andar": {
+                "7º Andar": 0.1,
+                "8º Andar": 0.1,
+                "9º Andar": 0.1
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Hard — Equipamentos",
+          "itens": [
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Tecnologia de Destruição de Qihai Yiluo [1]",
+              "chances_por_andar": {
+                "7º Andar": 0.02,
+                "8º Andar": 0.04,
+                "9º Andar": 0.07
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Filhote de Lobo Cinzento na Boca",
+              "chances_por_andar": {
+                "7º Andar": 0.02,
+                "8º Andar": 0.04,
+                "9º Andar": 0.07
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Cherub Coronet [1]",
+              "chances_por_andar": {
+                "7º Andar": 0.02,
+                "8º Andar": 0.04,
+                "9º Andar": 0.07
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Glade Rune Upgrade",
+              "chances_por_andar": {
+                "7º Andar": 0.04,
+                "8º Andar": 0.08,
+                "9º Andar": 0.15
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Fire Rune Upgrade",
+              "chances_por_andar": {
+                "7º Andar": 0.04,
+                "8º Andar": 0.08,
+                "9º Andar": 0.15
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Ice Rune Upgrade",
+              "chances_por_andar": {
+                "7º Andar": 0.04,
+                "8º Andar": 0.08,
+                "9º Andar": 0.15
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Death Rune Upgrade",
+              "chances_por_andar": {
+                "7º Andar": 0.04,
+                "8º Andar": 0.08,
+                "9º Andar": 0.15
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Varmundt Temple Reform",
+              "chances_por_andar": {
+                "7º Andar": 0.04,
+                "8º Andar": 0.08,
+                "9º Andar": 0.15
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Rune Temple Reform",
+              "chances_por_andar": {
+                "7º Andar": 0.04,
+                "8º Andar": 0.08,
+                "9º Andar": 0.15
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Varmundt Soul Reform",
+              "chances_por_andar": {
+                "7º Andar": 0.04,
+                "8º Andar": 0.08,
+                "9º Andar": 0.15
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Rune Soul Reform",
+              "chances_por_andar": {
+                "7º Andar": 0.04,
+                "8º Andar": 0.08,
+                "9º Andar": 0.15
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Varmundt Venom Reform",
+              "chances_por_andar": {
+                "7º Andar": 0.04,
+                "8º Andar": 0.08,
+                "9º Andar": 0.15
+              }
+            },
+            {
+              "secao": "Hard — Equipamentos",
+              "nome": "Rune Venom Reform",
+              "chances_por_andar": {
+                "7º Andar": 0.04,
+                "8º Andar": 0.08,
+                "9º Andar": 0.15
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Extreme — Utilitários",
+          "itens": [
+            {
+              "secao": "Extreme — Utilitários",
+              "nome": "1x Bolinho Saltitante",
+              "chances_por_andar": {
+                "10º Andar": 100.0,
+                "11º Andar": 100.0,
+                "12º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Extreme — Utilitários",
+              "nome": "4x Bênção do Ferreiro",
+              "chances_por_andar": {
+                "10º Andar": 50.0,
+                "11º Andar": 75.0,
+                "12º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Extreme — Utilitários",
+              "nome": "4x Poção de AP",
+              "chances_por_andar": {
+                "10º Andar": 50.0,
+                "11º Andar": 75.0,
+                "12º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Extreme — Utilitários",
+              "nome": "25x Fruto de Yggdrasil",
+              "chances_por_andar": {
+                "10º Andar": 50.0,
+                "11º Andar": 75.0,
+                "12º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Extreme — Utilitários",
+              "nome": "25x Semente de Yggdrasil",
+              "chances_por_andar": {
+                "10º Andar": 50.0,
+                "11º Andar": 75.0,
+                "12º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Extreme — Utilitários",
+              "nome": "1x Contrato do Herói",
+              "chances_por_andar": {
+                "10º Andar": 0.1,
+                "11º Andar": 0.1,
+                "12º Andar": 0.1
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Extreme — Equipamentos",
+          "itens": [
+            {
+              "secao": "Extreme — Equipamentos",
+              "nome": "Tapa-Olho Cósmico [1]",
+              "chances_por_andar": {
+                "10º Andar": 0.05,
+                "11º Andar": 0.07,
+                "12º Andar": 0.09
+              }
+            },
+            {
+              "secao": "Extreme — Equipamentos",
+              "nome": "Cesta das Maravilhas [1]",
+              "chances_por_andar": {
+                "10º Andar": 0.03,
+                "11º Andar": 0.05,
+                "12º Andar": 0.07
+              }
+            },
+            {
+              "secao": "Extreme — Equipamentos",
+              "nome": "Curativo YSF01 [1]",
+              "chances_por_andar": {
+                "10º Andar": 0.01,
+                "11º Andar": 0.03,
+                "12º Andar": 0.05
+              }
+            },
+            {
+              "secao": "Extreme — Equipamentos",
+              "nome": "Travesseiro da Alice [1]",
+              "chances_por_andar": {
+                "10º Andar": 0.05,
+                "11º Andar": 0.07,
+                "12º Andar": 0.09
+              }
+            },
+            {
+              "secao": "Extreme — Equipamentos",
+              "nome": "Servant's loyalty",
+              "chances_por_andar": {
+                "10º Andar": 0.05,
+                "11º Andar": 0.07,
+                "12º Andar": 0.09
+              }
+            },
+            {
+              "secao": "Extreme — Equipamentos",
+              "nome": "Botas Decadentes",
+              "chances_por_andar": {
+                "10º Andar": 0.05,
+                "11º Andar": 0.07,
+                "12º Andar": 0.09
+              }
+            },
+            {
+              "secao": "Extreme — Equipamentos",
+              "nome": "Sapatos do Caça-Bruxas",
+              "chances_por_andar": {
+                "10º Andar": 0.05,
+                "11º Andar": 0.07,
+                "12º Andar": 0.09
+              }
+            },
+            {
+              "secao": "Extreme — Equipamentos",
+              "nome": "Ring of Missing-LT [1]",
+              "chances_por_andar": {
+                "10º Andar": 0.02,
+                "11º Andar": 0.04,
+                "12º Andar": 0.06
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Unreal — Utilitários",
+          "itens": [
+            {
+              "secao": "Unreal — Utilitários",
+              "nome": "2x Bolinho Saltitante",
+              "chances_por_andar": {
+                "13º Andar": 100.0,
+                "14º Andar": 100.0,
+                "15º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Unreal — Utilitários",
+              "nome": "5x Bênção do Ferreiro",
+              "chances_por_andar": {
+                "13º Andar": 50.0,
+                "14º Andar": 75.0,
+                "15º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Unreal — Utilitários",
+              "nome": "5x Poção de AP",
+              "chances_por_andar": {
+                "13º Andar": 50.0,
+                "14º Andar": 75.0,
+                "15º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Unreal — Utilitários",
+              "nome": "40x Fruto de Yggdrasil",
+              "chances_por_andar": {
+                "13º Andar": 50.0,
+                "14º Andar": 75.0,
+                "15º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Unreal — Utilitários",
+              "nome": "40x Semente de Yggdrasil",
+              "chances_por_andar": {
+                "13º Andar": 50.0,
+                "14º Andar": 75.0,
+                "15º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Unreal — Utilitários",
+              "nome": "1x Álbum Mágico de Cartas [MvP] [Bio 5]",
+              "chances_por_andar": {
+                "13º Andar": 0.01,
+                "14º Andar": 0.02,
+                "15º Andar": 0.03
+              }
+            },
+            {
+              "secao": "Unreal — Utilitários",
+              "nome": "1x Contrato do Herói",
+              "chances_por_andar": {
+                "13º Andar": 0.1,
+                "14º Andar": 0.1,
+                "15º Andar": 0.1
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Unreal — Equipamentos",
+          "itens": [
+            {
+              "secao": "Unreal — Equipamentos",
+              "nome": "Ancient Morocc Noble Jewelry [1]",
+              "chances_por_andar": {
+                "13º Andar": 0.01,
+                "14º Andar": 0.02,
+                "15º Andar": 0.035
+              }
+            },
+            {
+              "secao": "Unreal — Equipamentos",
+              "nome": "Alloy Flower - LT [1]",
+              "chances_por_andar": {
+                "13º Andar": 0.05,
+                "14º Andar": 0.07,
+                "15º Andar": 0.095
+              }
+            },
+            {
+              "secao": "Unreal — Equipamentos",
+              "nome": "Orelhas dos Espíritos",
+              "chances_por_andar": {
+                "13º Andar": 0.01,
+                "14º Andar": 0.02,
+                "15º Andar": 0.035
+              }
+            },
+            {
+              "secao": "Unreal — Equipamentos",
+              "nome": "Orelhas de Sangrentas",
+              "chances_por_andar": {
+                "13º Andar": 0.01,
+                "14º Andar": 0.02,
+                "15º Andar": 0.035
+              }
+            },
+            {
+              "secao": "Unreal — Equipamentos",
+              "nome": "Orelhas do Abismo",
+              "chances_por_andar": {
+                "13º Andar": 0.01,
+                "14º Andar": 0.02,
+                "15º Andar": 0.035
+              }
+            },
+            {
+              "secao": "Unreal — Equipamentos",
+              "nome": "Ameretat",
+              "chances_por_andar": {
+                "13º Andar": 0.01,
+                "14º Andar": 0.02,
+                "15º Andar": 0.035
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Savage — Utilitários",
+          "itens": [
+            {
+              "secao": "Savage — Utilitários",
+              "nome": "3x Bolinho Saltitante",
+              "chances_por_andar": {
+                "16º Andar": 100.0,
+                "17º Andar": 100.0,
+                "18º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Savage — Utilitários",
+              "nome": "6x Bênção do Ferreiro",
+              "chances_por_andar": {
+                "16º Andar": 50.0,
+                "17º Andar": 75.0,
+                "18º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Savage — Utilitários",
+              "nome": "6x Poção de AP",
+              "chances_por_andar": {
+                "16º Andar": 50.0,
+                "17º Andar": 75.0,
+                "18º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Savage — Utilitários",
+              "nome": "50x Fruto de Yggdrasil",
+              "chances_por_andar": {
+                "16º Andar": 50.0,
+                "17º Andar": 75.0,
+                "18º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Savage — Utilitários",
+              "nome": "50x Semente de Yggdrasil",
+              "chances_por_andar": {
+                "16º Andar": 50.0,
+                "17º Andar": 75.0,
+                "18º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Savage — Utilitários",
+              "nome": "1x Álbum Mágico de Cartas [MvP] [Bio 5]",
+              "chances_por_andar": {
+                "16º Andar": 0.05,
+                "17º Andar": 0.07,
+                "18º Andar": 0.09
+              }
+            },
+            {
+              "secao": "Savage — Utilitários",
+              "nome": "1x Contrato do Herói",
+              "chances_por_andar": {
+                "16º Andar": 0.1,
+                "17º Andar": 0.1,
+                "18º Andar": 0.1
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Savage — Equipamentos",
+          "itens": [
+            {
+              "secao": "Savage — Equipamentos",
+              "nome": "Lenço Infame-LT",
+              "chances_por_andar": {
+                "16º Andar": 0.03,
+                "17º Andar": 0.04,
+                "18º Andar": 0.055
+              }
+            },
+            {
+              "secao": "Savage — Equipamentos",
+              "nome": "Ghost Fire",
+              "chances_por_andar": {
+                "16º Andar": 0.03,
+                "17º Andar": 0.04,
+                "18º Andar": 0.055
+              }
+            },
+            {
+              "secao": "Savage — Equipamentos",
+              "nome": "Estrela Mágica",
+              "chances_por_andar": {
+                "16º Andar": 0.03,
+                "17º Andar": 0.04,
+                "18º Andar": 0.055
+              }
+            },
+            {
+              "secao": "Savage — Equipamentos",
+              "nome": "Exotic Temporal Manteau-LT [1]",
+              "chances_por_andar": {
+                "16º Andar": 0.01,
+                "17º Andar": 0.02,
+                "18º Andar": 0.035
+              }
+            },
+            {
+              "secao": "Savage — Equipamentos",
+              "nome": "Exotic Temporal Boots-LT [1]",
+              "chances_por_andar": {
+                "16º Andar": 0.01,
+                "17º Andar": 0.02,
+                "18º Andar": 0.035
+              }
+            },
+            {
+              "secao": "Savage — Equipamentos",
+              "nome": "Exotic Temporal Armor-LT [1]",
+              "chances_por_andar": {
+                "16º Andar": 0.01,
+                "17º Andar": 0.02,
+                "18º Andar": 0.035
+              }
+            },
+            {
+              "secao": "Savage — Equipamentos",
+              "nome": "Temporal Ring-LT [1]",
+              "chances_por_andar": {
+                "16º Andar": 0.01,
+                "17º Andar": 0.02,
+                "18º Andar": 0.035
+              }
+            },
+            {
+              "secao": "Savage — Equipamentos",
+              "nome": "Kshatra Vairya [1]",
+              "chances_por_andar": {
+                "16º Andar": 0.01,
+                "17º Andar": 0.02,
+                "18º Andar": 0.035
+              }
+            },
+            {
+              "secao": "Savage — Equipamentos",
+              "nome": "Olhos do Ninja Exilado [1]",
+              "chances_por_andar": {
+                "16º Andar": 0.02,
+                "17º Andar": 0.04,
+                "18º Andar": 0.065
+              }
+            },
+            {
+              "secao": "Savage — Equipamentos",
+              "nome": "Crown of Beelzebub",
+              "chances_por_andar": {
+                "16º Andar": 0.01,
+                "17º Andar": 0.01,
+                "18º Andar": 0.015
+              }
+            },
+            {
+              "secao": "Savage — Equipamentos",
+              "nome": "Vesper Headgear [1]",
+              "chances_por_andar": {
+                "16º Andar": 0.01,
+                "17º Andar": 0.01,
+                "18º Andar": 0.015
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Elemental — Utilitários",
+          "itens": [
+            {
+              "secao": "Elemental — Utilitários",
+              "nome": "6x Bolinho Saltitante",
+              "chances_por_andar": {
+                "19º Andar": 100.0,
+                "20º Andar": 100.0,
+                "21º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Elemental — Utilitários",
+              "nome": "12x Bênção do Ferreiro",
+              "chances_por_andar": {
+                "19º Andar": 50.0,
+                "20º Andar": 75.0,
+                "21º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Elemental — Utilitários",
+              "nome": "12x Poção de AP",
+              "chances_por_andar": {
+                "19º Andar": 50.0,
+                "20º Andar": 75.0,
+                "21º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Elemental — Utilitários",
+              "nome": "100x Fruto de Yggdrasil",
+              "chances_por_andar": {
+                "19º Andar": 50.0,
+                "20º Andar": 75.0,
+                "21º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Elemental — Utilitários",
+              "nome": "100x Semente de Yggdrasil",
+              "chances_por_andar": {
+                "19º Andar": 50.0,
+                "20º Andar": 75.0,
+                "21º Andar": 100.0
+              }
+            },
+            {
+              "secao": "Elemental — Utilitários",
+              "nome": "1x Álbum Mágico de Cartas [MvP] [Bio 5]",
+              "chances_por_andar": {
+                "19º Andar": 0.11,
+                "20º Andar": 0.13,
+                "21º Andar": 0.15
+              }
+            },
+            {
+              "secao": "Elemental — Utilitários",
+              "nome": "1x Contrato do Herói",
+              "chances_por_andar": {
+                "19º Andar": 0.2,
+                "20º Andar": 0.2,
+                "21º Andar": 0.2
+              }
+            },
+            {
+              "secao": "Elemental — Utilitários",
+              "nome": "1x Reset de Instância",
+              "chances_por_andar": {
+                "19º Andar": 0.03,
+                "20º Andar": 0.04,
+                "21º Andar": 0.055
+              }
+            }
+          ]
+        },
+        {
+          "titulo": "Elemental — Equipamentos",
+          "itens": [
+            {
+              "secao": "Elemental — Equipamentos",
+              "nome": "Exotic Temporal Manteau-LT [1]",
+              "chances_por_andar": {
+                "19º Andar": 0.02,
+                "20º Andar": 0.03,
+                "21º Andar": 0.05
+              }
+            },
+            {
+              "secao": "Elemental — Equipamentos",
+              "nome": "Exotic Temporal Boots-LT [1]",
+              "chances_por_andar": {
+                "19º Andar": 0.02,
+                "20º Andar": 0.03,
+                "21º Andar": 0.05
+              }
+            },
+            {
+              "secao": "Elemental — Equipamentos",
+              "nome": "Exotic Temporal Armor-LT [1]",
+              "chances_por_andar": {
+                "19º Andar": 0.02,
+                "20º Andar": 0.03,
+                "21º Andar": 0.05
+              }
+            },
+            {
+              "secao": "Elemental — Equipamentos",
+              "nome": "Crown of Beelzebub",
+              "chances_por_andar": {
+                "19º Andar": 0.02,
+                "20º Andar": 0.03,
+                "21º Andar": 0.055
+              }
+            },
+            {
+              "secao": "Elemental — Equipamentos",
+              "nome": "Vesper Headgear [1]",
+              "chances_por_andar": {
+                "19º Andar": 0.02,
+                "20º Andar": 0.03,
+                "21º Andar": 0.055
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "unknow_blue_hole",
+      "nome": "Unknow Blue Hole",
+      "secoes": [
+        {
+          "titulo": "Drops — Fragmento de Comodo",
+          "itens": [
+            {
+              "secao": "Drops — Fragmento de Comodo",
+              "contexto": "Monstros Normais",
+              "nome": "Fragmento de Comodo",
+              "chance_pct": 1.0
+            },
+            {
+              "secao": "Drops — Fragmento de Comodo",
+              "contexto": "Monstros Furious",
+              "nome": "Fragmento de Comodo",
+              "chance_pct": 5.0
+            },
+            {
+              "secao": "Drops — Fragmento de Comodo",
+              "contexto": "MVP",
+              "nome": "Fragmento de Comodo",
+              "chance_pct": 100.0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -19,6 +19,13 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from adapters.herosaga_client import HerosagaClient  # noqa: E402
+from adapters.herosaga_session import (  # noqa: E402
+    HerosagaAuthRequired,
+    auth_error_payload,
+    clear_session_cookie,
+    get_discord_status,
+    verify_session,
+)
 from adapters.network import scraper  # noqa: E402
 from adapters.persistence import (  # noqa: E402
     _ALERTS_IO_LOCK,
@@ -45,7 +52,8 @@ from app_runtime import (  # noqa: E402
 )
 from core.constants import BASE_URL  # noqa: E402
 from item_icon_cache import (  # noqa: E402
-    item_icon_disk_path,
+    fetch_icons_batch,
+    png_bytes_to_data_uri,
     read_item_icon_png_bytes,
     resolve_item_icon_url,
 )
@@ -53,33 +61,77 @@ from services.item_search import ItemSearchService  # noqa: E402
 from services.monitored import splice_category_block  # noqa: E402
 from services.search_history import append_search as _append_search  # noqa: E402
 from web_poc.alert_worker import get_alert_worker  # noqa: E402
+from web_poc.discord_login import open_discord_login_window  # noqa: E402
 
 DEFAULT_CATEGORIES = ("Gerais", "Equipamentos", "Cartas", "Utilitários", "Consumíveis")
 
+
+def _catch_herosaga_auth(method):
+    """Decorator: converte ``HerosagaAuthRequired`` em payload para a UI."""
+
+    def wrapper(self, *args, **kwargs):
+        try:
+            return method(self, *args, **kwargs)
+        except HerosagaAuthRequired as exc:
+            return auth_error_payload(str(exc))
+
+    wrapper.__name__ = getattr(method, "__name__", "api_method")
+    wrapper.__doc__ = method.__doc__
+    return wrapper
+
 _PRICE_KEYS = ("zeny", "rmt", "hero_points")
-_GENERIC_ITEM_NAME = re.compile(r"^Item \d+$")
+_GENERIC_ITEM_NAME = re.compile(r"^item \d+$", re.IGNORECASE)
 
 
 def _is_generic_item_name(name) -> bool:
     return bool(_GENERIC_ITEM_NAME.match(str(name or "").strip()))
 
 
-def _icon_data_uri(item_id, url: str) -> str:
-    """Ícone do item: cache em disco (base64) → URL remota como fallback."""
+def _icon_fetched(item_id, url: str) -> str:
+    """Ícone processado: cache 24×24 → download → flood fill → base64."""
+    iid = _as_int(item_id)
+    if iid is None:
+        return ""
     try:
-        iid = int(item_id)
-    except (TypeError, ValueError):
-        iid = None
-    if iid is not None:
-        try:
-            path = item_icon_disk_path(iid)
-            if os.path.isfile(path):
-                with open(path, "rb") as f:
-                    raw = f.read()
-                return "data:image/png;base64," + base64.b64encode(raw).decode("ascii")
-        except OSError:
-            pass
-    return resolve_item_icon_url(iid, url or "", base_url=BASE_URL)
+        raw = read_item_icon_png_bytes(iid, url or "", _fetch_url_bytes, base_url=BASE_URL)
+        if raw:
+            return png_bytes_to_data_uri(raw)
+    except Exception:  # noqa: BLE001
+        pass
+    return ""
+
+
+def _icon_data_uri(item_id, url: str) -> str:
+    """Atalho único para ícones processados em cache (todas as páginas)."""
+    return _icon_fetched(item_id, url or "")
+
+
+def _icon_pairs_unique(pairs: list[tuple]) -> list[tuple[int, str]]:
+    seen: set[int] = set()
+    out: list[tuple[int, str]] = []
+    for iid, url in pairs:
+        nid = _as_int(iid)
+        if nid is None or nid in seen:
+            continue
+        seen.add(nid)
+        out.append((nid, str(url or "")))
+    return out
+
+
+def _icon_map_for_pairs(pairs: list[tuple]) -> dict[int, str]:
+    uniq = _icon_pairs_unique(pairs)
+    if not uniq:
+        return {}
+    return fetch_icons_batch(uniq, _fetch_url_bytes, base_url=BASE_URL, max_workers=4)
+
+
+def _icon_from_map(iid, url: str, icons_map: dict | None) -> str:
+    nid = _as_int(iid)
+    if nid is None:
+        return ""
+    if icons_map is not None and nid in icons_map:
+        return icons_map[nid]
+    return _icon_data_uri(nid, url or "")
 
 
 def _as_int(v):
@@ -136,22 +188,23 @@ def _norm_prices(mp: dict) -> dict:
     return out
 
 
-def _icon_fetched(item_id, url: str) -> str:
-    """Ícone com rede: disco → download (grava em cache) → base64; '' se falhar."""
-    iid = _as_int(item_id)
-    if iid is None:
-        return ""
-    try:
-        raw = read_item_icon_png_bytes(iid, url or "", _fetch_url_bytes, base_url=BASE_URL)
-        if raw:
-            return "data:image/png;base64," + base64.b64encode(raw).decode("ascii")
-    except Exception:  # noqa: BLE001
-        pass
-    return ""
-
-
 def _sale_date(s: dict) -> str:
     return str(s.get("sale_date") or s.get("timestamp") or "")
+
+
+def _monitored_ids() -> set:
+    return {
+        x
+        for x in (_as_int(m.get("id")) for m in (load_data().get("monitored") or []))
+        if x is not None
+    }
+
+
+def _collect_history_if_monitored(item_id) -> None:
+    iid = _as_int(item_id)
+    if iid is None or iid not in _monitored_ids():
+        return
+    api_item_history(iid, persist=True)
 
 
 def _currency_block(items: list) -> dict:
@@ -175,13 +228,13 @@ def _currency_block(items: list) -> dict:
         "count": raw.get("quantidade", len(items)),
     }
 
-    recent = []
-    for s in sorted(items, key=_sale_date, reverse=True)[:25]:
+    entries = []
+    for s in sorted(items, key=_sale_date, reverse=True):
         try:
             price = float(s.get("price") or 0)
         except (TypeError, ValueError):
             price = 0.0
-        recent.append({
+        entries.append({
             "date": _sale_date(s),
             "price": price,
             "qty": int(s.get("quantity") or 1),
@@ -189,7 +242,14 @@ def _currency_block(items: list) -> dict:
             "buyer": str(s.get("buyer_name") or ""),
         })
 
-    return {"points": points, "stats": stats, "sales": recent, "count": len(items)}
+    total = len(items)
+    return {
+        "points": points,
+        "stats": stats,
+        "sales": entries,
+        "entries": entries,
+        "count": total,
+    }
 
 
 def _history_payload(item_id) -> dict:
@@ -197,8 +257,12 @@ def _history_payload(item_id) -> dict:
     iid = _as_int(item_id)
     if iid is None:
         return {"ok": False, "error": "id inválido"}
+
+    monitored = iid in _monitored_ids()
     try:
-        hist = api_item_history(iid)
+        hist = api_item_history(iid, persist=monitored)
+    except HerosagaAuthRequired as exc:
+        return auth_error_payload(str(exc))
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": str(exc)}
 
@@ -211,7 +275,12 @@ def _history_payload(item_id) -> dict:
     default = max(currencies, key=lambda k: currencies[k]["count"])
     if currencies[default]["count"] == 0:
         default = "zeny"
-    return {"ok": True, "currencies": currencies, "default": default}
+    return {
+        "ok": True,
+        "currencies": currencies,
+        "default": default,
+        "monitored": monitored,
+    }
 
 
 def _store_payload(s: dict) -> dict:
@@ -236,7 +305,7 @@ def _store_payload(s: dict) -> dict:
     return out
 
 
-def _item_payload(m: dict) -> dict:
+def _item_payload(m: dict, icons_map: dict | None = None) -> dict:
     iid = m.get("id")
     prices = {}
     mp = m.get("min_prices") or {}
@@ -248,10 +317,11 @@ def _item_payload(m: dict) -> dict:
                     prices[k] = float(v)
             except (TypeError, ValueError):
                 continue
+    nid = _as_int(iid)
     return {
         "id": iid,
         "name": str(m.get("name") or "Item"),
-        "icon": _icon_data_uri(iid, m.get("item_icon_url") or ""),
+        "icon": _icon_from_map(nid, m.get("item_icon_url") or "", icons_map),
         "prices": prices,
         "updated": str(m.get("updated_at") or m.get("home_prices_updated_at") or ""),
     }
@@ -285,7 +355,7 @@ def _build_slot_price(iid: int, refine: int, stores=None) -> dict:
         return {"rmt": None, "hp": None}
 
 
-def _alert_view(key: str, a: dict) -> dict:
+def _alert_view(key: str, a: dict, icons_map: dict | None = None) -> dict:
     """Representação de um alerta para o front-end (página Alertas)."""
     iid = _as_int(a.get("item_id"))
     ref = a.get("refinement")
@@ -297,7 +367,7 @@ def _alert_view(key: str, a: dict) -> dict:
         "key": key,
         "id": iid,
         "name": str(a.get("item_name") or "Item"),
-        "icon": _icon_data_uri(iid, a.get("item_icon_url") or ""),
+        "icon": _icon_from_map(iid, a.get("item_icon_url") or "", icons_map),
         "prices": _norm_prices(a.get("min_prices")),
         "currency": _norm_currency(a.get("sale_type")),
         "type": "above" if str(a.get("type")) == "above" else "below",
@@ -318,6 +388,35 @@ class Api:
             lambda iid, name: get_stores_from_item_page(iid, name, force_refresh=True)
         )
         self._alert_worker.start(initial_delay=8.0)
+
+    def get_discord_status(self, probe: bool = True) -> dict:
+        """Estado da sessão Discord / site Hero Saga."""
+        try:
+            status = get_discord_status(scraper=scraper, probe=bool(probe))
+            status["ok"] = True
+            return status
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "connected": False, "error": str(exc)}
+
+    def connect_discord(self) -> dict:
+        """Abre janela de login Discord e guarda cookie de sessão."""
+        result = open_discord_login_window()
+        if not result.get("connected"):
+            result["discord_auth_required"] = True
+            result.setdefault("error", "Não foi possível concluir o login.")
+        return result
+
+    def verify_discord_connection(self) -> dict:
+        """Testa se a sessão guardada consegue consultar o site."""
+        result = verify_session(scraper=scraper)
+        result["ok"] = bool(result.get("connected")) or bool(result.get("auth_required"))
+        if result.get("auth_required"):
+            result["discord_auth_required"] = True
+        return result
+
+    def disconnect_discord(self) -> dict:
+        clear_session_cookie()
+        return {"ok": True, "connected": False, "message": "Sessão Discord removida."}
 
     def _search(self) -> ItemSearchService:
         if self._search_service is None:
@@ -340,12 +439,18 @@ class Api:
             cats = list(DEFAULT_CATEGORIES)
 
         by_cat: dict = {c: [] for c in cats}
+        icon_pairs = [
+            (m.get("id"), m.get("item_icon_url") or "")
+            for m in monitored
+            if _as_int(m.get("id")) is not None
+        ]
+        icons_map = _icon_map_for_pairs(icon_pairs)
         for m in monitored:
             c = str(m.get("category") or "Gerais")
             by_cat.setdefault(c, [])
             if c not in cats:
                 cats.append(c)
-            by_cat[c].append(_item_payload(m))
+            by_cat[c].append(_item_payload(m, icons_map))
 
         categories = [{"name": c, "items": by_cat.get(c, [])} for c in cats]
         total = len(monitored)
@@ -355,6 +460,7 @@ class Api:
             "app": "GDZ Monitor",
         }
 
+    @_catch_herosaga_auth
     def get_item_detail(self, item_id) -> dict:
         """Lojas ao vivo + menores preços de um item monitorado (para o painel de detalhe)."""
         data = load_data()
@@ -387,7 +493,7 @@ class Api:
             "ok": True,
             "id": iid,
             "name": name or str(meta.get("item_card_title") or meta.get("name") or "Item"),
-            "icon": _icon_data_uri(iid, icon_url),
+            "icon": _icon_from_map(iid, icon_url, None),
             "item_icon_url": icon_url,
             "stores": payload_stores,
             "min_prices": sale_min_prices_from_stores(stores),
@@ -397,6 +503,7 @@ class Api:
             "monitored": iid in {_as_int(m.get("id")) for m in monitored},
         }
 
+    @_catch_herosaga_auth
     def get_vendor_shop(self, vendor_id) -> dict:
         """Carrega inventário completo de uma loja (viewshop)."""
         from services.vendor_shop import fetch_vendor_shop
@@ -416,15 +523,20 @@ class Api:
         if not data.get("ok"):
             return data
 
+        raw_items = [raw for raw in (data.get("items") or []) if isinstance(raw, dict)]
+        icon_pairs = [
+            (raw.get("item_id"), raw.get("icon_url") or "")
+            for raw in raw_items
+            if _as_int(raw.get("item_id")) is not None
+        ]
+        icons_map = _icon_map_for_pairs(icon_pairs)
         items = []
-        for raw in data.get("items") or []:
-            if not isinstance(raw, dict):
-                continue
+        for raw in raw_items:
             iid = _as_int(raw.get("item_id"))
             items.append({
                 "item_id": iid,
                 "item_name": str(raw.get("item_name") or (f"Item {iid}" if iid else "—")),
-                "icon": _icon_data_uri(iid, raw.get("icon_url") or "") if iid else "",
+                "icon": _icon_from_map(iid, raw.get("icon_url") or "", icons_map) if iid else "",
                 "refinement": int(raw.get("refinement") or 0),
                 "slots": str(raw.get("slots") or ""),
                 "slot1": str(raw.get("slot1") or ""),
@@ -438,10 +550,12 @@ class Api:
         data["items"] = items
         return data
 
-    def get_price_history(self, item_id) -> dict:
+    @_catch_herosaga_auth
+    def get_price_history(self, item_id, period=None, display_limit=None) -> dict:
         """Histórico de preços/vendas de um item (para o gráfico no detalhe)."""
         return _history_payload(item_id)
 
+    @_catch_herosaga_auth
     def refresh_prices(self) -> dict:
         """Atualiza os menores preços de todos os itens monitorados e devolve a Home nova."""
         data = load_data()
@@ -459,12 +573,20 @@ class Api:
                 stores, meta = get_stores_from_item_page(
                     iid_int, str(m.get("name") or ""), force_refresh=True
                 )
+            except HerosagaAuthRequired:
+                raise
             except Exception:  # noqa: BLE001 — falha de rede num item não trava o lote
                 continue
             m["min_prices"] = sale_min_prices_from_stores(stores or [])
             m["home_prices_updated_at"] = datetime.now().isoformat()
             if (meta or {}).get("item_icon_url") and not m.get("item_icon_url"):
                 m["item_icon_url"] = meta["item_icon_url"]
+            try:
+                _collect_history_if_monitored(iid_int)
+            except HerosagaAuthRequired:
+                raise
+            except Exception:  # noqa: BLE001
+                pass
             updated += 1
         data["monitored"] = monitored
         try:
@@ -554,6 +676,7 @@ class Api:
 
     # ── Busca no catálogo + adicionar ao monitor ────────────────────────
 
+    @_catch_herosaga_auth
     def search_items(self, query) -> dict:
         q = str(query or "").strip()
         if not q:
@@ -565,14 +688,16 @@ class Api:
             return {"ok": False, "error": str(exc), "query": q, "items": []}
 
         items = []
+        icon_pairs = []
         for r in results or []:
             iid = _as_int(r.get("id"))
             if iid is None:
                 continue
+            icon_pairs.append((iid, r.get("item_icon_url") or ""))
             items.append({
                 "id": iid,
                 "name": str(r.get("name") or "Item"),
-                "icon": _icon_fetched(iid, r.get("item_icon_url") or ""),
+                "icon": "",
                 "item_icon_url": resolve_item_icon_url(iid, r.get("item_icon_url") or "", base_url=BASE_URL),
                 "prices": _norm_prices(r.get("min_prices")),
                 "online_stores": int(r.get("online_stores") or 0),
@@ -586,10 +711,11 @@ class Api:
             if direct is not None:
                 try:
                     stores, meta = get_stores_from_item_page(direct, "", force_refresh=True)
+                    icon_pairs.append((direct, (meta or {}).get("item_icon_url") or ""))
                     items.append({
                         "id": direct,
                         "name": str((meta or {}).get("name") or f"Item {direct}"),
-                        "icon": _icon_fetched(direct, (meta or {}).get("item_icon_url") or ""),
+                        "icon": "",
                         "item_icon_url": resolve_item_icon_url(direct, (meta or {}).get("item_icon_url") or "", base_url=BASE_URL),
                         "prices": sale_min_prices_from_stores(stores or []),
                         "online_stores": len(stores or []),
@@ -599,6 +725,12 @@ class Api:
                 except Exception:  # noqa: BLE001
                     pass
 
+        icons_map = _icon_map_for_pairs(icon_pairs)
+        for it in items:
+            iid = _as_int(it.get("id"))
+            if iid is not None:
+                it["icon"] = _icon_from_map(iid, it.get("item_icon_url") or "", icons_map)
+
         try:
             data = load_data()
             _append_search(data, q, len(items))
@@ -606,8 +738,17 @@ class Api:
         except Exception:  # noqa: BLE001
             pass
 
+        for it in items:
+            try:
+                _collect_history_if_monitored(it.get("id"))
+            except HerosagaAuthRequired:
+                raise
+            except Exception:  # noqa: BLE001
+                pass
+
         return {"ok": True, "query": q, "items": items}
 
+    @_catch_herosaga_auth
     def add_item(self, item) -> dict:
         item = item or {}
         iid = _as_int(item.get("id"))
@@ -664,6 +805,7 @@ class Api:
         result["added"] = iid
         return result
 
+    @_catch_herosaga_auth
     def repair_monitored_generic_names(self) -> dict:
         """Corrige monitorados salvos como «Item {id}» (nome + ícone em cache)."""
         data = load_data()
@@ -714,14 +856,21 @@ class Api:
         """Lista plana de monitorados (ordem do utilizador) com preços e data."""
         data = load_data()
         monitored = list(data.get("monitored") or [])
+        icon_pairs = [
+            (m.get("id"), m.get("item_icon_url") or "")
+            for m in monitored
+            if _as_int(m.get("id")) is not None
+        ]
+        icons_map = _icon_map_for_pairs(icon_pairs)
         items = []
         for m in monitored:
-            p = _item_payload(m)
+            p = _item_payload(m, icons_map)
             p["added"] = str(m.get("added_at") or "")[:10]
             p["category"] = str(m.get("category") or "Gerais")
             items.append(p)
         return {"ok": True, "items": items, "total": len(items)}
 
+    @_catch_herosaga_auth
     def refresh_monitored_prices(self) -> dict:
         """Igual a refresh_prices mas devolve a lista plana (página Monitorados)."""
         self.refresh_prices()
@@ -731,9 +880,16 @@ class Api:
 
     def get_alerts(self) -> dict:
         alerts = load_alerts()
-        items = [_alert_view(k, a) for k, a in alerts.items()]
+        icon_pairs = [
+            (a.get("item_id"), a.get("item_icon_url") or "")
+            for a in alerts.values()
+            if _as_int(a.get("item_id")) is not None
+        ]
+        icons_map = _icon_map_for_pairs(icon_pairs)
+        items = [_alert_view(k, a, icons_map) for k, a in alerts.items()]
         return {"ok": True, "items": items, "total": len(items)}
 
+    @_catch_herosaga_auth
     def refresh_alerts_prices(self) -> dict:
         """Atualiza os menores preços (por moeda) de cada alerta e grava."""
         alerts = load_alerts()
@@ -863,6 +1019,7 @@ class Api:
             lim = 200
         result = self._alert_worker.get_notifications(unread_only=only, limit=lim)
         alerts = load_alerts()
+        icon_pairs = []
         for n in result.get("items") or []:
             iid = _as_int(n.get("item_id"))
             url = str(n.get("item_icon_url") or "")
@@ -870,7 +1027,17 @@ class Api:
                 key = str(n.get("alert_key") or "")
                 a = alerts.get(key) or {}
                 url = str(a.get("item_icon_url") or "")
-            n["icon"] = _icon_data_uri(iid, url) if iid is not None else ""
+            if iid is not None:
+                icon_pairs.append((iid, url))
+        icons_map = _icon_map_for_pairs(icon_pairs)
+        for n in result.get("items") or []:
+            iid = _as_int(n.get("item_id"))
+            url = str(n.get("item_icon_url") or "")
+            if not url and iid is not None:
+                key = str(n.get("alert_key") or "")
+                a = alerts.get(key) or {}
+                url = str(a.get("item_icon_url") or "")
+            n["icon"] = _icon_from_map(iid, url, icons_map) if iid is not None else ""
         return result
 
     def mark_alert_notifications_read(self, ids=None) -> dict:
@@ -995,6 +1162,14 @@ class Api:
 
     def _loot_state(self) -> dict:
         mgr = self._loot()
+        icon_pairs = []
+        for n in sorted(mgr.groups):
+            g = mgr.groups[n]
+            for it in g.items:
+                iid = int(it.id)
+                if iid > 0:
+                    icon_pairs.append((iid, getattr(it, "icon_url", "") or ""))
+        icons_map = _icon_map_for_pairs(icon_pairs)
         groups = []
         for n in sorted(mgr.groups):
             g = mgr.groups[n]
@@ -1006,7 +1181,7 @@ class Api:
                     "name": str(it.name or f"Item {iid}"),
                     "type": str(getattr(it, "type", "") or ""),
                     "npc_sell_price": int(getattr(it, "npc_sell_price", 0) or 0),
-                    "icon": _icon_data_uri(iid, getattr(it, "icon_url", "") or ""),
+                    "icon": _icon_from_map(iid, getattr(it, "icon_url", "") or "", icons_map),
                 })
             groups.append({
                 "number": g.number,
@@ -1022,8 +1197,9 @@ class Api:
     def loot_get(self) -> dict:
         return self._loot_state()
 
+    @_catch_herosaga_auth
     def loot_search(self, query) -> dict:
-        from loot_manager import search_item
+        from loot_manager import search_item, search_items_by_ids
 
         q = str(query or "").strip()
         if not q:
@@ -1033,55 +1209,72 @@ class Api:
         rows = []
         try:
             if multi and all(p.isdigit() for p in multi if p):
-                seen = set()
-                for p in multi:
-                    if not p:
-                        continue
-                    for r in search_item(p):
-                        rid = int(r.get("id") or 0)
-                        if rid and rid not in seen:
-                            seen.add(rid)
-                            rows.append(r)
+                ids = [int(p) for p in multi if p]
+                seen: set[int] = set()
+                for r in search_items_by_ids(ids):
+                    rid = int(r.get("id") or 0)
+                    if rid and rid not in seen:
+                        seen.add(rid)
+                        rows.append(r)
             else:
                 rows = search_item(q)
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": str(exc), "items": []}
 
         items = []
+        icon_pairs = []
         for r in rows or []:
             iid = int(r.get("id") or 0)
             if not iid:
                 continue
+            icon_pairs.append((iid, r.get("icon_url") or ""))
             items.append({
                 "id": iid,
                 "name": str(r.get("name") or f"Item {iid}"),
                 "type": str(r.get("type") or ""),
                 "npc_sell_price": int(r.get("npc_sell_price") or 0),
-                "icon": _icon_data_uri(iid, r.get("icon_url") or ""),
+                "icon": "",
                 "icon_url": str(r.get("icon_url") or ""),
             })
+        icons_map = _icon_map_for_pairs(icon_pairs)
+        for it in items:
+            it["icon"] = _icon_from_map(it["id"], it.get("icon_url") or "", icons_map)
         return {"ok": True, "items": items}
 
     def loot_add(self, group_number, item) -> dict:
-        from loot_manager import LootItem
+        from loot_manager import LootItem, resolve_loot_item_meta
 
         it = item or {}
         iid = _as_int(it.get("id"))
         if iid is None:
             return {"ok": False, "error": "id inválido", **self._loot_state()}
+        cfg = load_settings()
+        meta = resolve_loot_item_meta(
+            iid,
+            hint_name=str(it.get("name") or ""),
+            hint_type=str(it.get("type") or ""),
+            hint_icon_url=str(it.get("icon_url") or ""),
+            hint_npc_sell_price=int(it.get("npc_sell_price") or 0),
+            api_key=(cfg.get("divine_pride_api_key") or "").strip() or None,
+            dp_server=(cfg.get("divine_pride_server") or "").strip() or None,
+        )
         mgr = self._loot()
-        added = mgr.add_item(
+        status = mgr.add_item(
             int(group_number),
             LootItem(
                 id=iid,
-                name=str(it.get("name") or f"Item {iid}"),
-                type=str(it.get("type") or ""),
-                icon_url=str(it.get("icon_url") or ""),
-                npc_sell_price=int(it.get("npc_sell_price") or 0),
+                name=str(meta.get("name") or f"Item {iid}"),
+                type=str(meta.get("type") or ""),
+                icon_url=str(meta.get("icon_url") or ""),
+                npc_sell_price=int(meta.get("npc_sell_price") or 0),
             ),
         )
-        if not added:
-            return {"ok": False, "error": "Grupo cheio (10) ou item duplicado.", **self._loot_state()}
+        if status == "duplicate":
+            return {"ok": False, "reason": "duplicate", "error": "Item já está nesta lista.", **self._loot_state()}
+        if status == "full":
+            return {"ok": False, "reason": "full", "error": "Lista cheia (10 itens).", **self._loot_state()}
+        if status != "ok":
+            return {"ok": False, "error": "Não foi possível adicionar.", **self._loot_state()}
         mgr.save_to_file()
         return {"ok": True, **self._loot_state()}
 
@@ -1165,6 +1358,8 @@ class Api:
         except (TypeError, ValueError):
             hpr = 30
         cells = {"equip": {}, "visual": {}}
+        icon_pairs = []
+        pending: dict[tuple[str, str], dict] = {}
         for layer in ("equip", "visual"):
             src = b.get(layer) if isinstance(b.get(layer), dict) else {}
             for sk in (BUILD_SLOT_LEFT + BUILD_SLOT_RIGHT):
@@ -1178,6 +1373,14 @@ class Api:
                             v = None
                     if k in cell or k in ("item_icon_url", "item_stats", "item_description", "weapon_base", "manual_price", "price_rmt", "price_hp"):
                         cell[k] = v
+                pending[(layer, sk)] = cell
+                iid = _as_int(cell.get("item_id"))
+                if iid:
+                    icon_pairs.append((iid, cell.get("item_icon_url") or ""))
+        icons_map = _icon_map_for_pairs(icon_pairs)
+        for layer in ("equip", "visual"):
+            for sk in (BUILD_SLOT_LEFT + BUILD_SLOT_RIGHT):
+                cell = pending[(layer, sk)]
                 iid = _as_int(cell.get("item_id"))
                 desc = str(cell.get("item_description") or "")
                 ref = int(cell.get("refine") or 0)
@@ -1189,7 +1392,7 @@ class Api:
                     "item_name": str(cell.get("item_name") or ""),
                     "refine": int(cell.get("refine") or 0),
                     "is_2h": bool(cell.get("is_2h")),
-                    "icon": _icon_data_uri(iid, cell.get("item_icon_url") or "") if iid else "",
+                    "icon": _icon_from_map(iid, cell.get("item_icon_url") or "", icons_map) if iid else "",
                     "item_icon_url": str(cell.get("item_icon_url") or ""),
                     "manual_price": bool(cell.get("manual_price")),
                     "price_rmt": _optional_float(cell.get("price_rmt")),
@@ -1676,6 +1879,171 @@ class Api:
         if changed:
             save_mvp_storage(data)
         return {"ok": True, "fired": fired}
+
+    # ── Calculadora de Drop ───────────────────────────────────
+
+    def drop_calc_get_catalog(self) -> dict:
+        from services.drop_calculator import load_maps_catalog
+
+        try:
+            data = load_maps_catalog()
+            conteudos = []
+            for c in data.get("conteudos") or []:
+                conteudos.append({
+                    "id": str(c.get("id") or ""),
+                    "nome": str(c.get("nome") or ""),
+                    "secao_count": len(c.get("secoes") or []),
+                })
+            return {"ok": True, "conteudos": conteudos, "item_chance_caps": data.get("item_chance_caps") or []}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc), "conteudos": []}
+
+    def drop_calc_get_map(self, map_id) -> dict:
+        from services.drop_calculator import filter_mapa_for_display, load_maps_catalog
+
+        mid = str(map_id or "").strip()
+        if not mid:
+            return {"ok": False, "error": "map_id inválido"}
+        try:
+            for c in load_maps_catalog().get("conteudos") or []:
+                if str(c.get("id") or "") == mid:
+                    return {"ok": True, "mapa": filter_mapa_for_display(c)}
+            return {"ok": False, "error": "Mapa não encontrado"}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+
+    def drop_calc_get_buff_catalog(self) -> dict:
+        import base64 as _b64
+
+        from services.drop_calculator import (
+            buff_icon_path,
+            load_buff_catalog_raw,
+            load_pet_grades,
+            load_reputation_tiers,
+        )
+
+        try:
+            raw = load_buff_catalog_raw()
+            tiers = load_reputation_tiers()
+            pet_grades = load_pet_grades()
+            grupos = []
+            for g in raw.get("grupos") or []:
+                buffs = []
+                for b in g.get("buffs") or []:
+                    row = dict(b)
+                    icon_file = str(row.get("icon_file") or "")
+                    path = buff_icon_path(icon_file)
+                    icon_uri = ""
+                    if icon_file and os.path.isfile(path):
+                        with open(path, "rb") as fh:
+                            icon_uri = "data:image/png;base64," + _b64.b64encode(fh.read()).decode("ascii")
+                    row["icon"] = icon_uri
+                    track = str(row.get("tier_track") or "")
+                    if track and track in tiers:
+                        row["tiers"] = tiers[track].get("levels") or []
+                        row["max_level"] = tiers[track].get("max_level")
+                    grade_track = str(row.get("grade_track") or "")
+                    if grade_track and grade_track in pet_grades:
+                        row["grades"] = pet_grades[grade_track].get("levels") or []
+                        row["max_grade_level"] = pet_grades[grade_track].get("max_level")
+                    buffs.append(row)
+                grupos.append({
+                    "id": g.get("id"),
+                    "label": g.get("label"),
+                    "buffs": buffs,
+                })
+            return {"ok": True, "grupos": grupos, "tiers": tiers, "pet_grades": pet_grades}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc), "grupos": []}
+
+    def drop_calc_get_state(self) -> dict:
+        data = load_data()
+        st = data.get("drop_calculator_state")
+        if not isinstance(st, dict):
+            st = {}
+        return {
+            "ok": True,
+            "state": {
+                "buffs": st.get("buffs") if isinstance(st.get("buffs"), dict) else {},
+                "rep_levels": st.get("rep_levels") if isinstance(st.get("rep_levels"), dict) else {},
+                "pet_grades": st.get("pet_grades") if isinstance(st.get("pet_grades"), dict) else {},
+                "last_map_id": str(st.get("last_map_id") or ""),
+            },
+        }
+
+    def drop_calc_save_state(self, payload) -> dict:
+        p = payload if isinstance(payload, dict) else {}
+        data = load_data()
+        data["drop_calculator_state"] = {
+            "buffs": p.get("buffs") if isinstance(p.get("buffs"), dict) else {},
+            "rep_levels": p.get("rep_levels") if isinstance(p.get("rep_levels"), dict) else {},
+            "pet_grades": p.get("pet_grades") if isinstance(p.get("pet_grades"), dict) else {},
+            "last_map_id": str(p.get("last_map_id") or ""),
+        }
+        save_data(data)
+        return {"ok": True}
+
+    def drop_calc_compute(
+        self,
+        base_pct,
+        buffs_state,
+        rep_levels=None,
+        pet_grades=None,
+        map_id="",
+        contexto="",
+        item_nome="",
+        secao="",
+    ) -> dict:
+        from services.drop_calculator import compute_drop_row
+
+        try:
+            row = compute_drop_row(
+                float(base_pct or 0),
+                buffs_state if isinstance(buffs_state, dict) else {},
+                rep_levels if isinstance(rep_levels, dict) else {},
+                pet_grades if isinstance(pet_grades, dict) else {},
+                map_id=str(map_id or ""),
+                contexto=str(contexto or ""),
+                item_nome=str(item_nome or ""),
+                secao=str(secao or ""),
+            )
+            return {"ok": True, **row}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+
+    @_catch_herosaga_auth
+    def drop_calc_get_item_meta(self) -> dict:
+        """Metadados locais de itens (mapa estático + ícones em disco, sem rede)."""
+        from services.drop_calculator import build_drop_item_meta_index
+
+        try:
+            return {"ok": True, **build_drop_item_meta_index()}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc), "by_norm": {}, "by_id": {}}
+
+    @_catch_herosaga_auth
+    def drop_calc_resolve_item_ids(self, names, hints=None) -> dict:
+        """Resolve só com dados locais (sem busca no site)."""
+        from services.drop_calculator import resolve_drop_items_meta_local
+
+        name_list = [str(n) for n in (names or []) if str(n or "").strip()]
+        if not name_list:
+            return {"ok": True, "items": {}}
+        id_hints = hints if isinstance(hints, dict) else {}
+        try:
+            items_out = resolve_drop_items_meta_local(name_list, id_hints=id_hints)
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc), "items": {}}
+
+        resolved_ids = sum(1 for r in items_out.values() if int(r.get("item_id") or 0) > 0)
+        with_icons = sum(1 for r in items_out.values() if r.get("icon"))
+        return {
+            "ok": True,
+            "items": items_out,
+            "resolved": resolved_ids,
+            "icons": with_icons,
+            "from_cache": resolved_ids,
+        }
 
     def ping(self) -> str:
         return "ok"

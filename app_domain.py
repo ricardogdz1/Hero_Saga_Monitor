@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import gzip
 import json
+import re
 import zlib
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Callable, Dict, Optional
+
+SALES_RETENTION_DAYS = 30
+SALES_PERIOD_HOURS = {"24h": 24, "7d": 7 * 24, "30d": 30 * 24}
 
 
 def group_sales_by_type(sales: list) -> dict:
@@ -23,12 +27,156 @@ def group_sales_by_type(sales: list) -> dict:
     return grouped
 
 
+def sale_timestamp_str(sale: dict) -> str:
+    return str(sale.get("sale_date") or sale.get("timestamp") or "").strip()
+
+
+def parse_sale_datetime(sale: dict) -> Optional[datetime]:
+    raw = sale_timestamp_str(sale)
+    if not raw:
+        return None
+    normalized = raw.replace("T", " ").strip()
+    for fmt, size in (
+        ("%Y-%m-%d %H:%M:%S", 19),
+        ("%Y-%m-%d %H:%M", 16),
+        ("%Y-%m-%d", 10),
+    ):
+        try:
+            return datetime.strptime(normalized[:size], fmt)
+        except ValueError:
+            continue
+    m = re.match(r"(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})", normalized)
+    if m:
+        try:
+            return datetime.strptime(f"{m.group(1)} {m.group(2)}", "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            pass
+    m_br = re.match(r"(\d{2})/(\d{2})/(\d{4})(?:[ T](\d{2}:\d{2}(?::\d{2})?))?", normalized)
+    if m_br:
+        time_part = m_br.group(4) or "00:00:00"
+        if len(time_part) == 5:
+            time_part += ":00"
+        try:
+            return datetime.strptime(f"{m_br.group(3)}-{m_br.group(2)}-{m_br.group(1)} {time_part}", "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            pass
+    if normalized.isdigit():
+        try:
+            ts = int(normalized)
+            if ts > 1_000_000_000_000:
+                ts //= 1000
+            if ts > 1_000_000_000:
+                return datetime.fromtimestamp(ts)
+        except (ValueError, OSError, OverflowError):
+            pass
+    return None
+
+
+def normalize_sale_record(sale: dict) -> dict:
+    ts = sale_timestamp_str(sale)
+    if not ts:
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        price = float(sale.get("price") or 0)
+    except (TypeError, ValueError):
+        price = 0.0
+    try:
+        quantity = int(sale.get("quantity") or 1)
+    except (TypeError, ValueError):
+        quantity = 1
+    return {
+        "timestamp": ts,
+        "price": price,
+        "seller_name": str(sale.get("seller_name") or "Shop"),
+        "buyer_name": str(sale.get("buyer_name") or "Comprador"),
+        "quantity": quantity,
+        "sale_type": str(sale.get("sale_type") or ""),
+    }
+
+
+def sale_dedup_key(sale: dict) -> tuple:
+    norm = normalize_sale_record(sale)
+    ts = norm["timestamp"][:19]
+    st = (norm["sale_type"] or "").lower()
+    return (ts, st, norm["price"], norm["seller_name"], norm["buyer_name"], norm["quantity"])
+
+
+def local_sale_to_api(sale: dict) -> dict:
+    norm = normalize_sale_record(sale)
+    return {
+        "sale_date": norm["timestamp"],
+        "price": norm["price"],
+        "seller_name": norm["seller_name"],
+        "buyer_name": norm["buyer_name"],
+        "quantity": norm["quantity"],
+        "sale_type": norm["sale_type"],
+    }
+
+
+def prune_sales_older_than(
+    sales: list,
+    *,
+    days: int = SALES_RETENTION_DAYS,
+    now: Optional[datetime] = None,
+) -> list:
+    """Remove vendas com data anterior a ``days`` dias (retenção máxima)."""
+    now = now or datetime.now()
+    cutoff = now - timedelta(days=days)
+    kept = []
+    for s in sales or []:
+        dt = parse_sale_datetime(s)
+        if dt is None or dt >= cutoff:
+            kept.append(s)
+    return kept
+
+
+def merge_sales_history(
+    existing: list,
+    incoming: list,
+    *,
+    retention_days: int = SALES_RETENTION_DAYS,
+) -> list:
+    """Funde vendas locais com novas entradas, deduplica e aplica retenção."""
+    combined = []
+    seen: set[tuple] = set()
+    for raw in list(existing or []) + list(incoming or []):
+        norm = normalize_sale_record(raw)
+        key = sale_dedup_key(norm)
+        if key in seen:
+            continue
+        seen.add(key)
+        combined.append(norm)
+    combined.sort(key=lambda x: x.get("timestamp") or "", reverse=True)
+    return prune_sales_older_than(combined, days=retention_days)
+
+
+def filter_sales_by_period(
+    sales: list,
+    period: str,
+    *,
+    now: Optional[datetime] = None,
+) -> list:
+    """Filtra vendas dentro da janela ``24h``, ``7d`` ou ``30d``."""
+    now = now or datetime.now()
+    hours = SALES_PERIOD_HOURS.get(str(period or "30d").lower(), 30 * 24)
+    cutoff = now - timedelta(hours=hours)
+    out = []
+    for s in sales or []:
+        dt = parse_sale_datetime(s)
+        if dt is None:
+            out.append(s)
+        elif dt >= cutoff:
+            out.append(s)
+    return out
+
+
 def calculate_stats(sales: list) -> dict:
     """Calcula estatísticas de preço para uma lista de vendas."""
     if not sales:
         return {"último": 0, "mínimo": 0, "máximo": 0, "média": 0, "total": 0, "quantidade": len(sales)}
 
-    prices = [s.get("price", 0) for s in sales]
+    ordered = sorted(sales, key=sale_timestamp_str, reverse=True)
+    prices = [s.get("price", 0) for s in ordered]
     prices = [p for p in prices if p > 0]
 
     if not prices:

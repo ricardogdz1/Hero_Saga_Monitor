@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# Mesmo ficheiro que app.py (histórico de vendas/preços por item).
+# Mesmo ficheiro que app_runtime (histórico de vendas/preços por item).
 PRICES_HISTORY_FILE = os.path.join(os.path.expanduser("~"), "herosaga_prices_history.json")
 
 FetchStoresFn = Callable[[int, str], Tuple[List[dict], dict]]
