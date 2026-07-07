@@ -37,6 +37,7 @@ herosaga_monitor/
 │       └── storage.py         #   Helpers de ficheiros JSON
 ├── data/                      # Catálogo MVP, mapas, sprites (bundled no .exe)
 ├── tools/                     # Scripts de manutenção de dados (não vão no .exe)
+├── tests/                     # Testes pytest das funções puras (rodar: pytest)
 ├── docs/                      # Esta documentação + material da calculadora de drop
 ├── HerosagaMonitor.spec       # Build PyInstaller
 ├── run.bat / build.bat
@@ -79,10 +80,12 @@ app → services → adapters / external → core
 | API / scrape do site | `gdz_monitor/adapters/` + `services/market/` |
 | Novo dado bundled | `data/` + `HerosagaMonitor.spec` (já cobre a pasta inteira) |
 | Script de preparação de dados | `tools/` |
+| Teste de regra de negócio | `tests/` (pytest; só funções puras, sem rede/UI) |
 
 ## Notas
 
-- Não há framework JS nem testes automatizados; a UI é HTML/CSS/JS vanilla.
+- Não há framework JS; a UI é HTML/CSS/JS vanilla. Os testes (pytest) cobrem
+  só as funções puras de `services/` — UI e scraping ao vivo ficam de fora.
 - Dados do utilizador ficam em `~/herosaga_*.json` (ver `adapters/persistence.py`).
 - O frontend antigo (Tkinter) foi removido; o histórico está no git
   (`app.py`, `core/theme.py`, `mvp_alert_sound.py` eram resquícios dele).

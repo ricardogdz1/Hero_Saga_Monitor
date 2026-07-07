@@ -54,6 +54,17 @@ O app salva seus dados na pasta do utilizador (`~`), por exemplo:
 - Busca por nome: `herosaga.com.br/?module=vending&action=search&item_search=NOME`
 - Histórico por ID: `herosaga.com.br/?module=item&action=view&id=ID`
 
+## Testes
+
+As regras de negócio (parse de preços, calculadora de drop, stats de build, vendas) têm testes automatizados:
+
+```
+pip install pytest
+pytest
+```
+
+Rodam em menos de 1 segundo, sem rede e sem abrir janela. Ao corrigir um bug de cálculo/parsing, adicione um caso em `tests/` para ele não voltar.
+
 ## Estrutura do projeto
 
 Todo o código da aplicação vive no pacote `gdz_monitor/` (camadas `app` → `services` → `adapters`/`external` → `core`). Detalhes em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

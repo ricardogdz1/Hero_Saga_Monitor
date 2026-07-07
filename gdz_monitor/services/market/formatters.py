@@ -22,12 +22,13 @@ def item_emoji(name: str) -> str:
         return "🪄"
     if any(x in n for x in ["elmo", "capacete", "helm"]):
         return "🪖"
+    # "carta" antes de "ring": nomes de mobs como Poring/Angeling contêm "ring"
+    if "carta" in n:
+        return "🃏"
     if any(x in n for x in ["anel", "ring"]):
         return "💍"
     if any(x in n for x in ["bota", "sapato", "boot"]):
         return "👢"
-    if "carta" in n:
-        return "🃏"
     return "🗡"
 
 

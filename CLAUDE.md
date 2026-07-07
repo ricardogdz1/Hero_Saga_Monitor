@@ -38,7 +38,7 @@ home | build | mvp | loot | alerts | drop-calc | config
 - Autenticação Discord: cookie fluxSessionData; métodos podem retornar discord_auth_required
 - Moedas: zeny, rmt, hero_points
 - Dados do usuário ficam em ~/herosaga_*.json
-- Sem framework JS, sem testes automatizados no projeto
+- Sem framework JS. Testes: pytest em `tests/` (só funções puras de services/ — nada de UI nem rede); rodar `pytest` na raiz
 - Não commitar secrets (.env, senhas SMTP, API keys)
 - Não criar arquivos de documentação a menos que eu peça
 
@@ -48,6 +48,7 @@ home | build | mvp | loot | alerts | drop-calc | config
 3. Implementar lógica em `gdz_monitor/services/`
 4. Atualizar `gdz_monitor/web/app.js` se necessário
 5. Manter compatibilidade com PyInstaller (`data/` e `gdz_monitor/web/` bundled; caminhos via `core/paths.py`)
+6. Rodar `pytest` ao mexer em lógica coberta (preços, drop calc, stats de build, domain) e adicionar casos novos quando corrigir bug de parsing/cálculo
 
 ## Formato de resposta preferido
 - Explicar brevemente o que vai fazer antes de código extenso
