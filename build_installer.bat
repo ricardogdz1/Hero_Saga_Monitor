@@ -16,8 +16,9 @@ rem Versao vem de gdz_monitor\__init__.py (fonte unica)
 for /f %%v in ('python -c "import gdz_monitor; print(gdz_monitor.__version__)"') do set APPVER=%%v
 echo Versao: %APPVER%
 
-rem Localiza o compilador do Inno Setup 6
+rem Localiza o compilador do Inno Setup 6 (instalacao por usuario ou de sistema)
 set ISCC=
+if exist "%LocalAppData%\Programs\Inno Setup 6\ISCC.exe" set "ISCC=%LocalAppData%\Programs\Inno Setup 6\ISCC.exe"
 if exist "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
 if exist "%ProgramFiles%\Inno Setup 6\ISCC.exe" set "ISCC=%ProgramFiles%\Inno Setup 6\ISCC.exe"
 if "%ISCC%"=="" (
