@@ -8,7 +8,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from mvp_timer import (  # noqa: E402
+from gdz_monitor.services.mvp_timer import (  # noqa: E402
     load_mvp_catalog_cache,
     mvp_catalog_entry_skipped,
     resolve_mob_image,

@@ -10,7 +10,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from services.drop_calculator import (  # noqa: E402
+from gdz_monitor.services.drop_calculator import (  # noqa: E402
     filter_mapa_for_display,
     load_drop_item_id_map,
     load_maps_catalog,
@@ -34,7 +34,7 @@ def _collect_names() -> list[str]:
 
 
 def main() -> None:
-    from web_poc.api import Api, _fetch_url_bytes
+    from gdz_monitor.app.api import Api, _fetch_url_bytes
 
     api = Api()
     names = _collect_names()

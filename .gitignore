@@ -15,8 +15,8 @@ pip-wheel-metadata/
 *.spec.bak
 
 # PyInstaller / build
-build/
-dist/
+/build/
+/dist/
 *.exe
 
 # Test / coverage

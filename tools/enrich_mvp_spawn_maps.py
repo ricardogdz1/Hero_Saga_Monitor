@@ -31,8 +31,8 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from divine_pride_api import fetch_monster, resolve_api_key  # noqa: E402
-from mvp_timer import (  # noqa: E402
+from gdz_monitor.external.divine_pride_api import fetch_monster, resolve_api_key  # noqa: E402
+from gdz_monitor.services.mvp_timer import (  # noqa: E402
     MVP_CATALOG_PORTABLE_FILE,
     load_mvp_catalog_cache,
     monster_api_display_name,
@@ -44,7 +44,7 @@ from mvp_timer import (  # noqa: E402
 
 def _settings_api_key() -> str:
     try:
-        from app_settings import load_settings
+        from gdz_monitor.core.settings import load_settings
 
         return str(load_settings().get("divine_pride_api_key") or "").strip()
     except Exception:
@@ -53,7 +53,7 @@ def _settings_api_key() -> str:
 
 def _settings_api_server() -> Optional[str]:
     try:
-        from app_settings import load_settings
+        from gdz_monitor.core.settings import load_settings
 
         s = str(load_settings().get("divine_pride_server") or "").strip()
         return s or None

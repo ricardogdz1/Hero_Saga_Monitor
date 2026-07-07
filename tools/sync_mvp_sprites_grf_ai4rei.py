@@ -37,7 +37,7 @@ if str(_TOOLS) not in sys.path:
 
 from grf_catalog import read_grf_entries  # noqa: E402
 
-from mvp_timer import (  # noqa: E402
+from gdz_monitor.services.mvp_timer import (  # noqa: E402
     MVP_CATALOG_PORTABLE_FILE,
     MVP_SPRITES_AI4REI_DIR,
     MVP_SPRITES_DIR,

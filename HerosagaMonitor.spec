@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 # Build (na raiz do projecto): pyinstaller HerosagaMonitor.spec
-# Gera GDZMonitor.exe (PyWebView) com data/ e web_poc/web/ embutidos.
+# Gera GDZMonitor.exe (PyWebView) com data/ e gdz_monitor/web/ embutidos.
 
 import os
 
@@ -9,12 +9,12 @@ block_cipher = None
 _spec = globals().get("SPEC") or os.path.abspath("HerosagaMonitor.spec")
 _root = os.path.normpath(os.path.dirname(_spec))
 
-_web_dir = os.path.join(_root, "web_poc", "web")
-_entry = os.path.join(_root, "web_poc", "run.py")
+_web_dir = os.path.join(_root, "gdz_monitor", "web")
+_entry = os.path.join(_root, "run.py")
 
 _datas = [
     (os.path.join(_root, "data"), "data"),
-    (_web_dir, os.path.join("web_poc", "web")),
+    (_web_dir, os.path.join("gdz_monitor", "web")),
 ]
 
 _binaries = []
@@ -24,8 +24,8 @@ _hidden = [
     "PIL.Image",
     "bottle",
     "webview",
-    "web_poc.api",
-    "web_poc.alert_worker",
+    "gdz_monitor.app.api",
+    "gdz_monitor.app.alert_worker",
     "pythonnet",
     "clr_loader",
 ]

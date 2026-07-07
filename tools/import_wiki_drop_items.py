@@ -22,8 +22,8 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from core.constants import BASE_URL
-from services.drop_calculator import (
+from gdz_monitor.core.constants import BASE_URL
+from gdz_monitor.services.drop_calculator import (
     filter_mapa_for_display,
     load_drop_item_id_map,
     load_maps_catalog,
@@ -163,7 +163,7 @@ def parse_wiki_page(html: str) -> List[dict]:
 
 
 def fetch_wiki_html(url: str) -> str:
-    from adapters.network import scraper
+    from gdz_monitor.adapters.network import scraper
 
     resp = scraper.get(url, timeout=25, allow_redirects=True)
     resp.raise_for_status()
@@ -277,7 +277,7 @@ def match_drop_names(
 
 
 def _fetch_icon_bytes(url: str) -> Optional[bytes]:
-    from adapters.network import scraper
+    from gdz_monitor.adapters.network import scraper
 
     try:
         resp = scraper.get(url, timeout=15, allow_redirects=True)
@@ -296,7 +296,7 @@ def download_icons(item_ids: Iterable[int], *, dry_run: bool = False) -> dict:
     if dry_run:
         return stats
 
-    from item_icon_cache import ensure_item_icons_dir, item_icon_disk_path, read_item_icon_png_bytes
+    from gdz_monitor.external.item_icon_cache import ensure_item_icons_dir, item_icon_disk_path, read_item_icon_png_bytes
 
     ensure_item_icons_dir()
 

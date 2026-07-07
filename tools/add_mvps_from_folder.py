@@ -22,9 +22,9 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from app_settings import load_settings  # noqa: E402
-from divine_pride_api import fetch_monster  # noqa: E402
-from mvp_timer import (  # noqa: E402
+from gdz_monitor.core.settings import load_settings  # noqa: E402
+from gdz_monitor.external.divine_pride_api import fetch_monster  # noqa: E402
+from gdz_monitor.services.mvp_timer import (  # noqa: E402
     MVP_SPRITES_DIR,
     load_mvp_catalog_cache,
     monster_api_display_name,

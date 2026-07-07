@@ -14,7 +14,7 @@ Ferramentas para Hero Saga (herosaga.com.br): mercado, alertas, build, timer MVP
    ```
 4. Rode o app:
    ```
-   python web_poc/run.py
+   python run.py
    ```
    Ou dê duplo clique em `run.bat`.
 
@@ -28,7 +28,7 @@ Ferramentas para Hero Saga (herosaga.com.br): mercado, alertas, build, timer MVP
 3. Aguarde (pode demorar 1–2 minutos)
 4. O executável estará em `dist/GDZMonitor.exe`
 
-O `.exe` usa PyWebView (mesma UI que `web_poc/run.py`) e inclui a pasta `data/` para catálogo MVP offline.
+O `.exe` usa PyWebView (mesma UI que `python run.py`) e inclui a pasta `data/` para catálogo MVP offline.
 
 ## Funcionalidades
 
@@ -54,6 +54,6 @@ O app salva seus dados na pasta do utilizador (`~`), por exemplo:
 - Busca por nome: `herosaga.com.br/?module=vending&action=search&item_search=NOME`
 - Histórico por ID: `herosaga.com.br/?module=item&action=view&id=ID`
 
-## Scripts legados
+## Estrutura do projeto
 
-`app.py` reexporta funções de `app_runtime` (`from app import api_search`, etc.). Para abrir a app, use `web_poc/run.py`.
+Todo o código da aplicação vive no pacote `gdz_monitor/` (camadas `app` → `services` → `adapters`/`external` → `core`). Detalhes em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

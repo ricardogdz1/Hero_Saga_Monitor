@@ -28,7 +28,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from mvp_timer import (  # noqa: E402
+from gdz_monitor.services.mvp_timer import (  # noqa: E402
     MVP_CATALOG_DATA_DIR,
     MVP_CATALOG_PORTABLE_FILE,
     MVP_SPRITES_AI4REI_DIR,

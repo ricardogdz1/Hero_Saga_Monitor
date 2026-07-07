@@ -20,7 +20,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from mvp_timer import MVP_MAPS_DIR, _safe_map_name, load_mvp_catalog_cache  # noqa: E402
+from gdz_monitor.services.mvp_timer import MVP_MAPS_DIR, _safe_map_name, load_mvp_catalog_cache  # noqa: E402
 
 
 def main() -> None:
