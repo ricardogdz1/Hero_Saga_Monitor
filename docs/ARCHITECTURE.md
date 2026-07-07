@@ -65,9 +65,12 @@ app → services → adapters / external → core
 
 ## Build PyInstaller
 
-- Spec: `HerosagaMonitor.spec`
+- Spec: `HerosagaMonitor.spec` (ícone em `assets/icon.ico`)
 - Entry: `run.py`
 - Dados embutidos: `data/`, `gdz_monitor/web/`
+- Versão: fonte única em `gdz_monitor/__init__.py` (`__version__`) — aparece no
+  título da janela e no nome do instalador
+- Instalador (opcional): `build_installer.bat` → Inno Setup (`installer/GDZMonitor.iss`)
 - Os caminhos para esses recursos são resolvidos em `gdz_monitor/core/paths.py`,
   que funciona igual em dev e dentro do `.exe` (`sys._MEIPASS`).
 

@@ -13,6 +13,7 @@ import os
 
 import webview
 
+from gdz_monitor import __version__
 from gdz_monitor.app.api import Api
 from gdz_monitor.core.paths import WEB_DIR
 
@@ -22,7 +23,7 @@ def main() -> None:
     if not os.path.isfile(index):
         raise FileNotFoundError(f"Frontend não encontrado: {index}")
     webview.create_window(
-        "GDZ Monitor",
+        f"GDZ Monitor v{__version__}",
         url=index,
         js_api=Api(),
         width=1240,

@@ -28,7 +28,15 @@ Ferramentas para Hero Saga (herosaga.com.br): mercado, alertas, build, timer MVP
 3. Aguarde (pode demorar 1–2 minutos)
 4. O executável estará em `dist/GDZMonitor.exe`
 
-O `.exe` usa PyWebView (mesma UI que `python run.py`) e inclui a pasta `data/` para catálogo MVP offline.
+O `.exe` usa PyWebView (mesma UI que `python run.py`) e inclui a pasta `data/` para catálogo MVP offline. Quem baixa o `.exe` **não precisa ter Python instalado** — só o [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (já presente na maioria dos PCs com Edge).
+
+### Método 3 — Gerar o instalador (opcional, para distribuição)
+
+1. Instale o [Inno Setup 6](https://jrsoftware.org/isdl.php) (gratuito)
+2. Rode `build.bat` (gera o exe) e depois `build_installer.bat`
+3. O instalador estará em `dist/GDZMonitor-Setup-v<versão>.exe` — instala por usuário (sem pedir admin), cria atalho e desinstalador
+
+> **Nota para distribuição:** exe sem assinatura digital dispara o aviso do Windows SmartScreen. Instrua os usuários: "Mais informações" → "Executar assim mesmo".
 
 ## Funcionalidades
 

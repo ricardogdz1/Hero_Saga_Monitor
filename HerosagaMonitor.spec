@@ -10,6 +10,7 @@ _spec = globals().get("SPEC") or os.path.abspath("HerosagaMonitor.spec")
 _root = os.path.normpath(os.path.dirname(_spec))
 
 _web_dir = os.path.join(_root, "gdz_monitor", "web")
+_icon = os.path.join(_root, "assets", "icon.ico")
 _entry = os.path.join(_root, "run.py")
 
 _datas = [
@@ -74,4 +75,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=_icon if os.path.isfile(_icon) else None,
 )

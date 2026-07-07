@@ -31,8 +31,8 @@ DEFAULT_SETTINGS = {
     # Hero Saga — sessão Discord (cookie fluxSessionData após login em rpgherosaga.com)
     "herosaga_session_cookie": "",
     "herosaga_session_saved_at": "",
-    # Som ao terminar contagem MVP (tocado pelo frontend)
-    "mvp_alert_sound_path": r"C:\Users\Ricardo\Desktop\Som\Alerta de Som.mp3",
+    # Som ao terminar contagem MVP (tocado pelo frontend; vazio = beep padrão)
+    "mvp_alert_sound_path": "",
 }
 
 

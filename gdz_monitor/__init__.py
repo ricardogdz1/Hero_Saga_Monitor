@@ -9,3 +9,5 @@ Camadas:
     external/  integrações com serviços de terceiros (Divine Pride, ícones)
     core/      configurações, caminhos e constantes partilhadas
 """
+
+__version__ = "1.0.0"
