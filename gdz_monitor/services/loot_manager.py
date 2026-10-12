@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import copy
-import json
 import logging
-import os
 import re
 import threading
 import time
@@ -15,14 +13,14 @@ from urllib.parse import urljoin
 import requests
 
 from gdz_monitor.adapters.network import scraper
+from gdz_monitor.core import database
 from gdz_monitor.core.settings import load_settings
 from gdz_monitor.core.constants import BASE_URL
 from gdz_monitor.external.divine_pride_api import fetch_item
-from gdz_monitor.external.item_icon_cache import item_icon_disk_path, read_item_icon_png_bytes
+from gdz_monitor.external.item_icon_cache import png_bytes_to_data_uri, read_item_icon_png_bytes
 
 logger = logging.getLogger(__name__)
 
-LOOT_FILE = os.path.join(os.path.expanduser("~"), "herosaga_loot_groups.json")
 _DEFAULT_GROUP_RANGE = range(1, 6)
 _MAX_ITEMS_PER_GROUP = 10
 _MAX_GROUP_NUMBER = 9
@@ -66,8 +64,8 @@ class LootGroup:
 
 
 class LootManager:
-    def __init__(self, file_path: str = LOOT_FILE):
-        self.file_path = file_path
+    def __init__(self, doc_key: str = database.DOC_LOOT_GROUPS):
+        self.doc_key = doc_key
         self.groups: Dict[int, LootGroup] = {}
         self.load_from_file()
 
@@ -109,14 +107,12 @@ class LootManager:
 
     def load_from_file(self) -> None:
         self.groups = self._default_groups()
-        if not os.path.isfile(self.file_path):
-            return
         try:
-            with open(self.file_path, "r", encoding="utf-8") as f:
-                payload = json.load(f)
-        except (OSError, json.JSONDecodeError) as ex:
-            logger.warning("LootManager: arquivo inválido %s: %s", self.file_path, ex)
-            self.groups = self._default_groups()
+            payload = database.get_document(self.doc_key)
+        except Exception as ex:
+            logger.warning("LootManager: leitura de %s falhou: %s", self.doc_key, ex)
+            return
+        if payload is None:
             return
 
         raw_groups = payload.get("groups") if isinstance(payload, dict) else None
@@ -170,10 +166,9 @@ class LootManager:
                 "items": [asdict(i) for i in g.items],
             }
         try:
-            with open(self.file_path, "w", encoding="utf-8") as f:
-                json.dump(payload, f, ensure_ascii=False, indent=2)
-        except OSError as ex:
-            logger.warning("LootManager: falha ao gravar %s: %s", self.file_path, ex)
+            database.set_document(self.doc_key, payload)
+        except Exception as ex:
+            logger.warning("LootManager: falha ao gravar %s: %s", self.doc_key, ex)
 
     def get_group(self, group_number: int) -> LootGroup:
         n = int(group_number)
@@ -258,9 +253,8 @@ class LootManager:
         except (TypeError, ValueError):
             return ""
         norm_url = _normalize_media_url(icon_url or "") or _default_icon_url(iid)
-        read_item_icon_png_bytes(iid, norm_url, fetcher, base_url=BASE_URL)
-        path = item_icon_disk_path(iid)
-        return path if os.path.isfile(path) else ""
+        raw = read_item_icon_png_bytes(iid, norm_url, fetcher, base_url=BASE_URL)
+        return png_bytes_to_data_uri(raw) if raw else ""
 
 
 def _item_type_from_dp(data: dict) -> str:

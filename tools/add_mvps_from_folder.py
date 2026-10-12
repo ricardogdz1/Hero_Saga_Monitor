@@ -25,6 +25,7 @@ if str(_ROOT) not in sys.path:
 from gdz_monitor.core.settings import load_settings  # noqa: E402
 from gdz_monitor.external.divine_pride_api import fetch_monster  # noqa: E402
 from gdz_monitor.services.mvp_timer import (  # noqa: E402
+    MVP_CATALOG_PORTABLE_FILE,
     MVP_SPRITES_DIR,
     load_mvp_catalog_cache,
     monster_api_display_name,
@@ -113,7 +114,7 @@ def main() -> None:
     key = (cfg.get("divine_pride_api_key") or "").strip()
     srv = (cfg.get("divine_pride_server") or "").strip() or None
 
-    items = list(load_mvp_catalog_cache(max_age_seconds=None) or [])
+    items = list(load_mvp_catalog_cache(max_age_seconds=None, path=MVP_CATALOG_PORTABLE_FILE) or [])
     by_id: Dict[int, Dict[str, Any]] = {}
     for it in items:
         if isinstance(it, dict):
@@ -167,7 +168,7 @@ def main() -> None:
 
     merged = list(by_id.values())
     merged.sort(key=lambda x: (str(x.get("name") or "").casefold(), int(x.get("id") or 0)))
-    save_mvp_catalog_cache(merged)
+    save_mvp_catalog_cache(merged, path=MVP_CATALOG_PORTABLE_FILE)
     print(f"\nCatálogo gravado: {len(merged)} MVPs em data/mvp_catalog_cache.json")
 
 

@@ -18,22 +18,19 @@ Regras de cumulatividade (FUCIONAMENTO DOS BUFFS DE DROPS CON.txt):
 
 from __future__ import annotations
 
-import json
-import os
 import re
 import unicodedata
 from typing import Any, Dict, List, Optional
 
-from gdz_monitor.core.paths import DATA_DIR as _DATA_DIR
-_DROP_MAPS_FILE = os.path.join(_DATA_DIR, "drop_maps.json")
-_DROP_BUFF_CATALOG_FILE = os.path.join(_DATA_DIR, "drop_buff_catalog.json")
-_DROP_REP_TIERS_FILE = os.path.join(_DATA_DIR, "drop_reputation_tiers.json")
-_DROP_PET_GRADES_FILE = os.path.join(_DATA_DIR, "drop_pet_grades.json")
-_DROP_BUFF_ICONS_DIR = os.path.join(_DATA_DIR, "drop_buff_icons")
-_DROP_ITEM_ID_CACHE_FILE = os.path.join(
-    os.path.expanduser("~"), "herosaga_drop_item_id_cache.json"
-)
-_DROP_ITEM_ID_MAP_FILE = os.path.join(_DATA_DIR, "drop_item_id_map.json")
+from gdz_monitor.core import database, resources
+
+# Recursos em data/ (ver core/resources.py)
+_DROP_MAPS_FILE = "drop_maps.json"
+_DROP_BUFF_CATALOG_FILE = "drop_buff_catalog.json"
+_DROP_REP_TIERS_FILE = "drop_reputation_tiers.json"
+_DROP_PET_GRADES_FILE = "drop_pet_grades.json"
+_DROP_BUFF_ICONS_DIR = "drop_buff_icons"
+_DROP_ITEM_ID_MAP_FILE = "drop_item_id_map.json"
 
 MEGA_DROP_EXCLUSIVE = frozenset({"calice", "chicle", "goma"})
 _MIN_NAME_MATCH_SCORE = 5000
@@ -67,9 +64,11 @@ _id_cache: Optional[dict] = None
 _id_map_cache: Optional[dict] = None
 
 
-def _load_json(path: str) -> dict:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+def _load_json(rel_path: str) -> dict:
+    data = resources.read_json(rel_path)
+    if data is None:
+        raise FileNotFoundError(f"Recurso em falta: data/{rel_path}")
+    return data
 
 
 def load_maps_catalog() -> dict:
@@ -467,10 +466,9 @@ def load_drop_item_id_map() -> Dict[str, int]:
     if _id_map_cache is not None:
         return _id_map_cache
     out: Dict[str, int] = {}
-    if os.path.isfile(_DROP_ITEM_ID_MAP_FILE):
+    if resources.exists(_DROP_ITEM_ID_MAP_FILE):
         try:
-            with open(_DROP_ITEM_ID_MAP_FILE, encoding="utf-8") as f:
-                raw = json.load(f)
+            raw = resources.read_json(_DROP_ITEM_ID_MAP_FILE)
             if isinstance(raw, dict):
                 for k, v in raw.items():
                     try:
@@ -560,7 +558,7 @@ def _cache_entry_from_item_id(
     base_url: str = "",
 ) -> dict:
     from gdz_monitor.core.constants import BASE_URL as _BASE
-    from gdz_monitor.external.item_icon_cache import item_icon_disk_path
+    from gdz_monitor.external.item_icon_cache import item_icon_is_cached
 
     iid = int(item_id)
     base = (base_url or _BASE).rstrip("/")
@@ -569,7 +567,7 @@ def _cache_entry_from_item_id(
         "item_id": iid,
         "name": str(display_name or f"Item {iid}").strip(),
         "icon_url": icon_url,
-        "icon_ok": os.path.isfile(item_icon_disk_path(iid)),
+        "icon_ok": item_icon_is_cached(iid),
     }
 
 
@@ -608,23 +606,24 @@ def _lookup_known_item_id(
     return None
 
 
-def buff_icon_path(icon_file: str) -> str:
-    return os.path.join(_DROP_BUFF_ICONS_DIR, str(icon_file or ""))
+def read_buff_icon_bytes(icon_file: str) -> Optional[bytes]:
+    name = str(icon_file or "").strip()
+    if not name:
+        return None
+    return resources.read_bytes(f"{_DROP_BUFF_ICONS_DIR}/{name}")
 
 
 def load_item_id_cache() -> dict:
     global _id_cache
     if _id_cache is not None:
         return _id_cache
-    if os.path.isfile(_DROP_ITEM_ID_CACHE_FILE):
-        try:
-            with open(_DROP_ITEM_ID_CACHE_FILE, encoding="utf-8") as f:
-                raw = json.load(f)
-            if isinstance(raw, dict):
-                _id_cache = raw
-                return _id_cache
-        except Exception:
-            pass
+    try:
+        raw = database.get_document(database.DOC_DROP_ITEM_ID_CACHE)
+        if isinstance(raw, dict):
+            _id_cache = raw
+            return _id_cache
+    except Exception:
+        pass
     _id_cache = {}
     return _id_cache
 
@@ -633,7 +632,7 @@ _CACHE_FIELDS = frozenset({"item_id", "name", "icon_url", "not_found", "icon_ok"
 
 
 def reload_item_id_cache() -> dict:
-    """Recarrega cache do disco (útil entre chamadas API)."""
+    """Recarrega cache do banco (útil entre chamadas API)."""
     global _id_cache
     _id_cache = None
     return load_item_id_cache()
@@ -653,8 +652,7 @@ def save_item_id_cache(cache: dict) -> None:
                 row["item_id"] = 0
         cleaned[key] = row
     _id_cache = cleaned
-    with open(_DROP_ITEM_ID_CACHE_FILE, "w", encoding="utf-8") as f:
-        json.dump(_id_cache, f, ensure_ascii=False, indent=2)
+    database.set_document(database.DOC_DROP_ITEM_ID_CACHE, _id_cache)
 
 
 def _pick_best_search_row(query: str, rows: List[dict]) -> Optional[dict]:
@@ -739,7 +737,7 @@ def resolve_drop_items_meta(
     from gdz_monitor.core.constants import BASE_URL as _BASE
     from gdz_monitor.external.item_icon_cache import (
         fetch_icons_batch,
-        item_icon_disk_path,
+        item_icon_is_cached,
         read_cached_icon_data_uri,
     )
 
@@ -824,7 +822,7 @@ def resolve_drop_items_meta(
             "item_id": iid,
             "name": str(display_name or name),
             "icon_url": icon_url,
-            "icon_ok": os.path.isfile(item_icon_disk_path(iid)),
+            "icon_ok": item_icon_is_cached(iid),
             "resolve_by": resolve_by,
         }
 

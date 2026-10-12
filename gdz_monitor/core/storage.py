@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-import json
-import os
 import threading
 from typing import Any, Dict, List
 
-DATA_FILE = os.path.join(os.path.expanduser("~"), "herosaga_monitor_data.json")
-PRICES_HISTORY_FILE = os.path.join(os.path.expanduser("~"), "herosaga_prices_history.json")
-ALERTS_FILE = os.path.join(os.path.expanduser("~"), "herosaga_alerts.json")
+from gdz_monitor.core import database
 
 DEFAULT_MONITOR_CATEGORIES = (
     "Gerais",
@@ -74,59 +70,38 @@ def dedupe_monitored_preserve_order(monitored):
 
 
 def load_data() -> Dict[str, Any]:
-    if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, "r", encoding="utf-8") as f:
-                raw = json.load(f)
-                if not isinstance(raw, dict):
-                    raw = {}
-                data = ensure_monitor_structure(raw)
-                if isinstance(data.get("monitored"), list):
-                    data["monitored"] = dedupe_monitored_preserve_order(data["monitored"])
-                return data
-        except Exception:
-            pass
-    return ensure_monitor_structure({"monitored": [], "searches": []})
+    raw = database.get_document(database.DOC_MONITOR_DATA)
+    if not isinstance(raw, dict):
+        return ensure_monitor_structure({"monitored": [], "searches": []})
+    data = ensure_monitor_structure(raw)
+    if isinstance(data.get("monitored"), list):
+        data["monitored"] = dedupe_monitored_preserve_order(data["monitored"])
+    return data
 
 
 def save_data(data: Dict[str, Any]) -> None:
     if isinstance(data, dict) and isinstance(data.get("monitored"), list):
         data["monitored"] = dedupe_monitored_preserve_order(data["monitored"])
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    database.set_document(database.DOC_MONITOR_DATA, data)
 
 
 def load_prices_history():
     """Carrega histórico de preços coletados."""
-    if os.path.exists(PRICES_HISTORY_FILE):
-        try:
-            with open(PRICES_HISTORY_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {}
+    return database.get_document(database.DOC_PRICES_HISTORY, {})
 
 
 def save_prices_history(history):
     """Salva histórico de preços."""
-    with open(PRICES_HISTORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False, indent=2)
+    database.set_document(database.DOC_PRICES_HISTORY, history)
 
 
 def load_alerts():
     """Carrega alertas de preço configurados."""
     with _ALERTS_IO_LOCK:
-        if os.path.exists(ALERTS_FILE):
-            try:
-                with open(ALERTS_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except Exception:
-                pass
-        return {}
+        return database.get_document(database.DOC_ALERTS, {})
 
 
 def save_alerts(alerts):
     """Salva alertas de preço."""
     with _ALERTS_IO_LOCK:
-        with open(ALERTS_FILE, "w", encoding="utf-8") as f:
-            json.dump(alerts, f, ensure_ascii=False, indent=2)
+        database.set_document(database.DOC_ALERTS, alerts)

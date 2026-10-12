@@ -124,7 +124,7 @@ def write_sprite_id_map(items: list) -> int:
 
 def bundle_catalog_pngs(items: Optional[List] = None) -> int:
     if items is None:
-        items = load_mvp_catalog_cache(max_age_seconds=None) or []
+        items = load_mvp_catalog_cache(max_age_seconds=None, path=MVP_CATALOG_PORTABLE_FILE) or []
     n = 0
     out_dir = Path(MVP_SPRITES_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -164,7 +164,7 @@ def main() -> None:
     if not Path(MVP_CATALOG_PORTABLE_FILE).is_file():
         print(f"Aviso: sem catálogo {MVP_CATALOG_PORTABLE_FILE} — só ai4rei.")
         return
-    items = load_mvp_catalog_cache(max_age_seconds=None) or []
+    items = load_mvp_catalog_cache(max_age_seconds=None, path=MVP_CATALOG_PORTABLE_FILE) or []
     nb = bundle_catalog_pngs(items)
     nm = write_sprite_id_map(items)
     print(f"=> {nb} PNG por ID em {MVP_SPRITES_DIR}")

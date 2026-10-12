@@ -1,13 +1,12 @@
 """
-Cache em disco de ícones de itens (home monitorados).
-``data/item_icons/{item_id}.png`` — processados 24×24, fundo removido.
+Cache de ícones de itens (home monitorados) no banco local
+(tabela ``images``, namespace ``item_icon``) — PNG processados 24×24, fundo removido.
 """
 
 from __future__ import annotations
 
 import base64
 import logging
-import os
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
@@ -15,9 +14,7 @@ from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
 
-from gdz_monitor.core.paths import DATA_DIR
-
-ITEM_ICONS_DIR = os.path.join(DATA_DIR, "item_icons")
+from gdz_monitor.core import database
 
 ICON_OUTPUT_SIZE = (24, 24)
 ICON_WHITE_BG_TOLERANCE = 20
@@ -26,15 +23,15 @@ _reprocess_done = False
 
 
 def ensure_item_icons_dir() -> None:
-    os.makedirs(ITEM_ICONS_DIR, exist_ok=True)
+    """Na primeira chamada, reprocessa ícones em cache que ainda têm fundo branco."""
     global _reprocess_done
     if not _reprocess_done:
         _reprocess_done = True
         reprocess_cached_icons_with_white_background()
 
 
-def item_icon_disk_path(item_id: int) -> str:
-    return os.path.join(ITEM_ICONS_DIR, f"{int(item_id)}.png")
+def item_icon_is_cached(item_id: int) -> bool:
+    return database.has_image(database.IMG_ITEM_ICON, str(int(item_id)))
 
 
 from gdz_monitor.core.constants import BASE_URL as _DEFAULT_BASE_URL
@@ -151,8 +148,9 @@ def process_icon_png_bytes(raw: bytes) -> Optional[bytes]:
 
 
 def _save_icon_png(item_id: int, im) -> None:
-    path = item_icon_disk_path(item_id)
-    im.save(path, format="PNG")
+    out = BytesIO()
+    im.save(out, format="PNG")
+    database.put_image(database.IMG_ITEM_ICON, str(int(item_id)), out.getvalue())
 
 
 def png_has_opaque_white_background(
@@ -206,27 +204,19 @@ def _icon_cache_is_ready(raw: bytes) -> bool:
 
 
 def _read_cached_icon_bytes(item_id: int) -> Optional[bytes]:
-    path = item_icon_disk_path(item_id)
-    if not os.path.isfile(path):
-        return None
     try:
-        with open(path, "rb") as f:
-            return f.read()
-    except OSError as ex:
-        logger.debug("Ler ícone em cache %s: %s", path, ex)
+        return database.get_image(database.IMG_ITEM_ICON, str(int(item_id)))
+    except Exception as ex:
+        logger.debug("Ler ícone em cache %s: %s", item_id, ex)
         return None
 
 
 def reprocess_cached_icons_with_white_background() -> int:
     """Reprocessa PNGs em cache que ainda têm fundo branco (passos b–e)."""
-    if not os.path.isdir(ITEM_ICONS_DIR):
-        return 0
     fixed = 0
-    for name in os.listdir(ITEM_ICONS_DIR):
-        if not name.lower().endswith(".png"):
-            continue
+    for key in database.list_image_keys(database.IMG_ITEM_ICON):
         try:
-            item_id = int(os.path.splitext(name)[0])
+            item_id = int(key)
         except ValueError:
             continue
         raw = _read_cached_icon_bytes(item_id)
@@ -257,10 +247,9 @@ def read_item_icon_png_bytes(
     fetch_url_bytes: Callable[[str], Optional[bytes]],
     **kwargs,
 ) -> Optional[bytes]:
-    """Disco (se pronto) → download processicon → processar → gravar 24×24."""
+    """Banco (se pronto) → download processicon → processar → gravar 24×24."""
     base_url = str(kwargs.get("base_url") or _DEFAULT_BASE_URL)
     ensure_item_icons_dir()
-    path = item_icon_disk_path(item_id)
 
     cached = _read_cached_icon_bytes(item_id)
     if cached and _icon_cache_is_ready(cached):
@@ -294,7 +283,7 @@ def read_item_icon_png_bytes(
         _save_icon_png(item_id, im)
         return _read_cached_icon_bytes(item_id) or raw
     except Exception as ex:
-        logger.debug("Gravar ícone %s: %s", path, ex)
+        logger.debug("Gravar ícone %s: %s", item_id, ex)
         return cached
 
 
@@ -303,7 +292,7 @@ def png_bytes_to_data_uri(raw: bytes) -> str:
 
 
 def read_cached_icon_data_uri(item_id: int) -> str:
-    """Devolve data URI só se o PNG já existir em ``data/item_icons/`` (sem rede)."""
+    """Devolve data URI só se o PNG já estiver em cache no banco (sem rede)."""
     try:
         iid = int(item_id)
     except (TypeError, ValueError):

@@ -4,15 +4,14 @@ Monitor de alertas de preço em background + centro de notificações.
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 import threading
 import uuid
 from datetime import datetime
 from typing import Callable, Dict, List, Optional, Tuple
 
 from gdz_monitor.adapters.persistence import _ALERTS_IO_LOCK, load_alerts, save_alerts
+from gdz_monitor.core import database
 from gdz_monitor.services.alert_monitor import (
     _listing_stats,
     _history_stats_for_alert,
@@ -27,7 +26,6 @@ from gdz_monitor.core.settings import load_settings
 
 logger = logging.getLogger(__name__)
 
-NOTIFICATIONS_FILE = os.path.join(os.path.expanduser("~"), "herosaga_alert_notifications.json")
 _MAX_STORED = 200
 
 FetchStoresFn = Callable[[int, str], Tuple[List[dict], dict]]
@@ -254,12 +252,8 @@ class AlertWorker:
         return {"ok": True, "unread": 0, "total": 0}
 
     def _load_notifications(self) -> None:
-        if not os.path.isfile(NOTIFICATIONS_FILE):
-            self._notifications = []
-            return
         try:
-            with open(NOTIFICATIONS_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = database.get_document(database.DOC_ALERT_NOTIFICATIONS)
             raw = data.get("items") if isinstance(data, dict) else data
             self._notifications = [x for x in (raw or []) if isinstance(x, dict)]
         except Exception as e:
@@ -268,7 +262,6 @@ class AlertWorker:
 
     def _save_notifications(self) -> None:
         try:
-            with open(NOTIFICATIONS_FILE, "w", encoding="utf-8") as f:
-                json.dump({"items": self._notifications}, f, ensure_ascii=False, indent=2)
-        except OSError as e:
+            database.set_document(database.DOC_ALERT_NOTIFICATIONS, {"items": self._notifications})
+        except Exception as e:
             logger.warning("Notificações: gravação falhou: %s", e)

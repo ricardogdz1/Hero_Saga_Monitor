@@ -20,7 +20,12 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from gdz_monitor.services.mvp_timer import MVP_MAPS_DIR, _safe_map_name, load_mvp_catalog_cache  # noqa: E402
+from gdz_monitor.services.mvp_timer import (  # noqa: E402
+    MVP_CATALOG_PORTABLE_FILE,
+    MVP_MAPS_DIR,
+    _safe_map_name,
+    load_mvp_catalog_cache,
+)
 
 
 def main() -> None:
@@ -34,7 +39,7 @@ def main() -> None:
         sys.exit(1)
 
     catalog_maps: set[str] = set()
-    for it in load_mvp_catalog_cache(max_age_seconds=None) or []:
+    for it in load_mvp_catalog_cache(max_age_seconds=None, path=MVP_CATALOG_PORTABLE_FILE) or []:
         if not isinstance(it, dict):
             continue
         for sm in it.get("spawn_maps") or []:

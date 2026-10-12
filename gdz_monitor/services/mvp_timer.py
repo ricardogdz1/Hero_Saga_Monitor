@@ -2,13 +2,14 @@
 Timer de MVP — dados persistidos e auxiliares Divine Pride.
 
 Usa API database Monster/Map (chave em Configurações ou DIVINE_PRIDE_API_KEY).
-O catálogo MVP (lista + mapas de spawn) grava-se em ``data/mvp_catalog_cache.json``
-na pasta do programa — carrega de imediato sem nova rede até actualizar manualmente.
+O catálogo MVP (lista + mapas de spawn) vem de ``data/mvp_catalog_cache.json``; ao
+actualizar pela app, a nova versão grava-se no banco local (``core/database.py``).
 Imagens de mapa tentam URLs habituais do divine-pride.net.
 Sprites MVP: PNG em ``data/mvp_sprites/{id}.png`` (rápido; importar com
 ``tools/import_mvp_png_folder.py``), ou ``data/mvp_sprites_ai4rei/*.png``
-(exportados do HAR nn.ai4rei.net — ver ``tools/import_mvp_sprites_from_har.py``). Cache legacy em ``herosaga_dp_mob_images``.
-Em builds PyInstaller, a pasta ``data/`` deve ser incluída (ver ``HerosagaMonitor.spec``).
+(exportados do HAR nn.ai4rei.net — ver ``tools/import_mvp_sprites_from_har.py``). Cache de imagens
+de mob no banco local (namespace ``mob``).
+Recursos de ``data/`` são lidos via ``core/resources.py`` (banco empacotado no executável).
 """
 
 from __future__ import annotations
@@ -33,16 +34,16 @@ from gdz_monitor.external.divine_pride_api import DEFAULT_MONSTER_ACCEPT_LANGUAG
 
 logger = logging.getLogger(__name__)
 
+from gdz_monitor.core import database, resources
 from gdz_monitor.core.paths import DATA_DIR
 
+# Caminhos de data/ (fonte versionada; usados pelos scripts de tools/)
 MVP_CATALOG_DATA_DIR = DATA_DIR
 MVP_CATALOG_PORTABLE_FILE = os.path.join(MVP_CATALOG_DATA_DIR, "mvp_catalog_cache.json")
 # Cache antigo no perfil do utilizador (ainda lido para migração)
 MVP_CATALOG_CACHE_FILE_LEGACY = os.path.join(os.path.expanduser("~"), "herosaga_dp_mvp_catalog.json")
 MVP_CATALOG_CACHE_FILE = MVP_CATALOG_CACHE_FILE_LEGACY
 
-MVP_DATA_FILE = os.path.join(os.path.expanduser("~"), "herosaga_mvp_timers.json")
-MVP_MOB_IMAGE_CACHE_DIR = os.path.join(os.path.expanduser("~"), "herosaga_dp_mob_images")
 MVP_SPRITES_DIR = os.path.join(MVP_CATALOG_DATA_DIR, "mvp_sprites")
 MVP_SPRITES_AI4REI_DIR = os.path.join(MVP_CATALOG_DATA_DIR, "mvp_sprites_ai4rei")
 # Minimapas por nome de mapa (ex. moc_pryd06.png) — importar com tools/import_mvp_map_folder.py
@@ -50,6 +51,13 @@ MVP_MAPS_DIR = os.path.join(MVP_CATALOG_DATA_DIR, "mvp_maps")
 # Mapa ID Divine Pride → stem PNG ai4rei (ex. 1038 → OSIRIS). Gerado por tools/import_mvp_sprites_from_har.py
 MVP_SPRITE_ID_MAP_FILE = os.path.join(MVP_CATALOG_DATA_DIR, "mvp_sprite_id_map.json")
 MVP_SPRITE_ID_MAP_OVERRIDES_FILE = os.path.join(MVP_CATALOG_DATA_DIR, "mvp_sprite_id_map_overrides.json")
+
+# Os mesmos recursos, relativos a data/ (leitura via core/resources.py)
+_RES_CATALOG = "mvp_catalog_cache.json"
+_RES_SPRITES = "mvp_sprites"
+_RES_SPRITES_AI4REI = "mvp_sprites_ai4rei"
+_RES_MAPS = "mvp_maps"
+_RES_SPRITE_ID_MAPS = ("mvp_sprite_id_map.json", "mvp_sprite_id_map_overrides.json")
 
 DIVINE_MONSTER_LIST_URL = "https://www.divine-pride.net/database/monster"
 
@@ -82,7 +90,7 @@ def fetch_url_bytes(url: str, timeout: float = 15.0) -> Optional[bytes]:
 
 
 def _local_map_image_candidates(mapname: str) -> List[str]:
-    """Caminhos locais possíveis para o nome de mapa (variante com/sem underscore final)."""
+    """Recursos possíveis (relativos a data/) para o nome de mapa (variante com/sem underscore final)."""
     m = _safe_map_name(mapname)
     if not m:
         return []
@@ -97,7 +105,7 @@ def _local_map_image_candidates(mapname: str) -> List[str]:
     paths: List[str] = []
     for stem in stems:
         for ext in (".png", ".jpg", ".jpeg", ".bmp"):
-            p = os.path.join(MVP_MAPS_DIR, stem + ext)
+            p = f"{_RES_MAPS}/{stem}{ext}"
             if p not in seen:
                 seen.add(p)
                 paths.append(p)
@@ -110,14 +118,9 @@ def resolve_map_image(mapname: str) -> Tuple[Optional[bytes], Optional[str]]:
     if not m:
         return None, None
     for path in _local_map_image_candidates(mapname):
-        if os.path.isfile(path):
-            try:
-                with open(path, "rb") as f:
-                    data = f.read()
-                if data:
-                    return data, f"local:{path}"
-            except OSError as e:
-                logger.debug("resolve_map_image local %s: %s", path, e)
+        data = resources.read_bytes(path)
+        if data:
+            return data, f"local:{path}"
     for tpl in MAP_IMAGE_CANDIDATES:
         url = tpl.format(map=m)
         data = fetch_url_bytes(url)
@@ -126,19 +129,11 @@ def resolve_map_image(mapname: str) -> Tuple[Optional[bytes], Optional[str]]:
     return None, None
 
 
-def mob_image_cache_path(monster_id: int) -> str:
-    return os.path.join(MVP_MOB_IMAGE_CACHE_DIR, str(int(monster_id)))
-
-
 def read_mob_image_cache(monster_id: int) -> Optional[bytes]:
-    path = mob_image_cache_path(monster_id)
-    if not os.path.isfile(path):
-        return None
     try:
-        with open(path, "rb") as f:
-            return f.read()
-    except OSError as e:
-        logger.debug("read_mob_image_cache %s: %s", path, e)
+        return database.get_image(database.IMG_MOB, str(int(monster_id)))
+    except Exception as e:
+        logger.debug("read_mob_image_cache %s: %s", monster_id, e)
         return None
 
 
@@ -146,18 +141,13 @@ def write_mob_image_cache(monster_id: int, data: bytes) -> None:
     if not data:
         return
     try:
-        os.makedirs(MVP_MOB_IMAGE_CACHE_DIR, exist_ok=True)
-        path = mob_image_cache_path(monster_id)
-        tmp = path + ".tmp"
-        with open(tmp, "wb") as f:
-            f.write(data)
-        os.replace(tmp, path)
-    except OSError as e:
+        database.put_image(database.IMG_MOB, str(int(monster_id)), data)
+    except Exception as e:
         logger.debug("write_mob_image_cache %s: %s", monster_id, e)
 
 
 def mob_image_is_cached(monster_id: int) -> bool:
-    return os.path.isfile(mob_image_cache_path(monster_id))
+    return database.has_image(database.IMG_MOB, str(int(monster_id)))
 
 
 def _normalize_mvp_name_for_sprite(name: str) -> str:
@@ -226,16 +216,10 @@ _MVP_SPRITE_NORM_TO_AI4REI_KEY: Dict[str, str] = {
 
 
 def _mvp_ai4rei_png_stems() -> frozenset:
-    if not os.path.isdir(MVP_SPRITES_AI4REI_DIR):
-        return frozenset()
     out: set = set()
-    try:
-        for f in os.listdir(MVP_SPRITES_AI4REI_DIR):
-            if f.lower().endswith(".png"):
-                out.add(os.path.splitext(f)[0].upper())
-    except OSError as e:
-        logger.debug("list %s: %s", MVP_SPRITES_AI4REI_DIR, e)
-        return frozenset()
+    for f in resources.list_dir(_RES_SPRITES_AI4REI):
+        if f.lower().endswith(".png"):
+            out.add(os.path.splitext(f)[0].upper())
     return frozenset(out)
 
 
@@ -296,15 +280,8 @@ def load_mvp_sprite_id_map() -> Dict[int, str]:
     if _mvp_sprite_id_map_cache is not None:
         return _mvp_sprite_id_map_cache
     merged: Dict[int, str] = {}
-    for path in (MVP_SPRITE_ID_MAP_FILE, MVP_SPRITE_ID_MAP_OVERRIDES_FILE):
-        if not os.path.isfile(path):
-            continue
-        try:
-            with open(path, encoding="utf-8") as f:
-                raw = json.load(f)
-        except (OSError, ValueError, TypeError) as e:
-            logger.debug("load_mvp_sprite_id_map %s: %s", path, e)
-            continue
+    for path in _RES_SPRITE_ID_MAPS:
+        raw = resources.read_json(path)
         if not isinstance(raw, dict):
             continue
         inner = raw.get("monster_id_to_sprite_key")
@@ -334,35 +311,23 @@ def resolve_mob_image(
 ) -> Tuple[Optional[bytes], Optional[str]]:
     """
     Sprite local: (1) ``data/mvp_sprites/{id}.png``; (2) mapa JSON id→chave ai4rei;
-    (3) nome → ai4rei; (4) ``herosaga_dp_mob_images/{id}``. allow_network ignorado.
+    (3) nome → ai4rei; (4) cache de imagens de mob no banco. allow_network ignorado.
     """
     _ = allow_network
     mid = int(monster_id)
-    p_bundle = os.path.join(MVP_SPRITES_DIR, f"{mid}.png")
-    if os.path.isfile(p_bundle):
-        try:
-            with open(p_bundle, "rb") as f:
-                return f.read(), "bundle"
-        except OSError as e:
-            logger.debug("resolve_mob_image bundle %s: %s", p_bundle, e)
+    data = resources.read_bytes(f"{_RES_SPRITES}/{mid}.png")
+    if data:
+        return data, "bundle"
     key = load_mvp_sprite_id_map().get(mid)
     if key:
-        p_ai = os.path.join(MVP_SPRITES_AI4REI_DIR, f"{key}.png")
-        if os.path.isfile(p_ai):
-            try:
-                with open(p_ai, "rb") as f:
-                    return f.read(), "id_map"
-            except OSError as e:
-                logger.debug("resolve_mob_image id_map %s: %s", p_ai, e)
+        data = resources.read_bytes(f"{_RES_SPRITES_AI4REI}/{key}.png")
+        if data:
+            return data, "id_map"
     key = mvp_display_name_to_ai4rei_sprite_key(display_name or "")
     if key:
-        p_ai = os.path.join(MVP_SPRITES_AI4REI_DIR, f"{key}.png")
-        if os.path.isfile(p_ai):
-            try:
-                with open(p_ai, "rb") as f:
-                    return f.read(), "ai4rei"
-            except OSError as e:
-                logger.debug("resolve_mob_image ai4rei %s: %s", p_ai, e)
+        data = resources.read_bytes(f"{_RES_SPRITES_AI4REI}/{key}.png")
+        if data:
+            return data, "ai4rei"
     cached = read_mob_image_cache(mid)
     if cached:
         return cached, "cache"
@@ -551,14 +516,12 @@ def sync_mvp_respawn_from_divine_pride(
 
 def load_mvp_storage() -> Dict[str, Any]:
     raw: Dict[str, Any] = {"version": 1, "entries": []}
-    if os.path.exists(MVP_DATA_FILE):
-        try:
-            with open(MVP_DATA_FILE, "r", encoding="utf-8") as f:
-                o = json.load(f)
-            if isinstance(o, dict) and isinstance(o.get("entries"), list):
-                raw = o
-        except Exception as e:
-            logger.warning("load_mvp_storage: %s", e)
+    try:
+        o = database.get_document(database.DOC_MVP_TIMERS)
+        if isinstance(o, dict) and isinstance(o.get("entries"), list):
+            raw = o
+    except Exception as e:
+        logger.warning("load_mvp_storage: %s", e)
     raw.setdefault("version", 1)
     if not isinstance(raw.get("entries"), list):
         raw["entries"] = []
@@ -567,8 +530,7 @@ def load_mvp_storage() -> Dict[str, Any]:
 
 def save_mvp_storage(data: Dict[str, Any]) -> None:
     out = {"version": 1, "entries": list(data.get("entries") or [])}
-    with open(MVP_DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(out, f, ensure_ascii=False, indent=2)
+    database.set_document(database.DOC_MVP_TIMERS, out)
 
 
 def new_timer_entry(
@@ -1304,15 +1266,18 @@ def _mvp_catalog_rows_to_items(rows: Any) -> List[Dict[str, Any]]:
     return out
 
 
-def _load_mvp_catalog_file(fp: str, max_age_seconds: Optional[float]) -> Optional[List[Dict[str, Any]]]:
+def _read_json_file(fp: str) -> Any:
     if not os.path.isfile(fp):
         return None
     try:
         with open(fp, "r", encoding="utf-8") as f:
-            raw = json.load(f)
+            return json.load(f)
     except Exception as e:
         logger.warning("load mvp catalog %s: %s", fp, e)
         return None
+
+
+def _parse_mvp_catalog_payload(raw: Any, max_age_seconds: Optional[float]) -> Optional[List[Dict[str, Any]]]:
     if not isinstance(raw, dict):
         return None
     ts = raw.get("fetched_at")
@@ -1327,47 +1292,50 @@ def _load_mvp_catalog_file(fp: str, max_age_seconds: Optional[float]) -> Optiona
     return items if items else None
 
 
+def _current_mvp_catalog_payload() -> Any:
+    """Catálogo em uso: versão actualizada pela app (banco) ou a empacotada em ``data/``."""
+    raw = database.get_document(database.DOC_MVP_CATALOG)
+    if isinstance(raw, dict):
+        return raw
+    return resources.read_json(_RES_CATALOG)
+
+
 def load_mvp_catalog_cache(
     *,
     max_age_seconds: Optional[float] = 7 * 24 * 3600,
     path: Optional[str] = None,
 ) -> Optional[List[Dict[str, Any]]]:
-    """Catálogo em disco: primeiro ``data/mvp_catalog_cache.json`` (sem expiração); depois cache legado no perfil (TTL)."""
+    """Catálogo: banco local → ``data/mvp_catalog_cache.json`` (sem expiração) → cache legado no perfil (TTL).
+
+    Com *path*, lê só esse ficheiro (usado pelos scripts de ``tools/``).
+    """
     if path is not None:
-        return _load_mvp_catalog_file(path, max_age_seconds)
+        return _parse_mvp_catalog_payload(_read_json_file(path), max_age_seconds)
 
-    try:
-        os.makedirs(MVP_CATALOG_DATA_DIR, exist_ok=True)
-    except OSError:
-        pass
-
-    data = _load_mvp_catalog_file(MVP_CATALOG_PORTABLE_FILE, max_age_seconds=None)
+    data = _parse_mvp_catalog_payload(database.get_document(database.DOC_MVP_CATALOG), None)
     if data:
         return data
 
-    data = _load_mvp_catalog_file(MVP_CATALOG_CACHE_FILE_LEGACY, max_age_seconds)
+    data = _parse_mvp_catalog_payload(resources.read_json(_RES_CATALOG), None)
+    if data:
+        return data
+
+    data = _parse_mvp_catalog_payload(_read_json_file(MVP_CATALOG_CACHE_FILE_LEGACY), max_age_seconds)
     if data:
         try:
             save_mvp_catalog_cache(data, name_display_locale="pending")
         except Exception as ex:
-            logger.debug("migração catálogo MVP para pasta do programa: %s", ex)
+            logger.debug("migração catálogo MVP para o banco: %s", ex)
         return data
     return None
 
 
 def mvp_catalog_names_are_english_marked(path: Optional[str] = None) -> bool:
-    """True se ``mvp_catalog_cache.json`` foi gravado após sincronizar nomes via API (inglês)."""
-    fp = path or MVP_CATALOG_PORTABLE_FILE
-    if not os.path.isfile(fp):
+    """True se o catálogo foi gravado após sincronizar nomes via API (inglês)."""
+    raw = _read_json_file(path) if path else _current_mvp_catalog_payload()
+    if not isinstance(raw, dict):
         return False
-    try:
-        with open(fp, "r", encoding="utf-8") as f:
-            raw = json.load(f)
-        if not isinstance(raw, dict):
-            return False
-        return str(raw.get("name_display_locale") or "").lower() == "en"
-    except Exception:
-        return False
+    return str(raw.get("name_display_locale") or "").lower() == "en"
 
 
 def save_mvp_catalog_cache(
@@ -1376,10 +1344,10 @@ def save_mvp_catalog_cache(
     path: Optional[str] = None,
     name_display_locale: Optional[str] = None,
 ) -> None:
-    """Grava o catálogo; por defeito em ``data/mvp_catalog_cache.json`` junto ao programa.
+    """Grava o catálogo no banco local; com *path*, grava nesse ficheiro (scripts de ``tools/``).
 
     *name_display_locale*: ``\"en\"`` após nomes vindos da API (inglês); ``\"pending\"`` após
-    só HTML; ``None`` mantém o valor já gravado no ficheiro.
+    só HTML; ``None`` mantém o valor do catálogo actual.
     """
     mvp_out: List[Dict[str, Any]] = []
     for x in items:
@@ -1399,16 +1367,11 @@ def save_mvp_catalog_cache(
             d["respawn_seconds"] = rs
         mvp_out.append(d)
 
-    fp = path or MVP_CATALOG_PORTABLE_FILE
     prev_locale: Optional[str] = None
-    if name_display_locale is None and os.path.isfile(fp):
-        try:
-            with open(fp, "r", encoding="utf-8") as f:
-                prev_raw = json.load(f)
-            if isinstance(prev_raw, dict) and prev_raw.get("name_display_locale") is not None:
-                prev_locale = str(prev_raw.get("name_display_locale") or "").strip() or None
-        except Exception:
-            pass
+    if name_display_locale is None:
+        prev_raw = _read_json_file(path) if path else _current_mvp_catalog_payload()
+        if isinstance(prev_raw, dict) and prev_raw.get("name_display_locale") is not None:
+            prev_locale = str(prev_raw.get("name_display_locale") or "").strip() or None
     locale_tag = name_display_locale if name_display_locale is not None else prev_locale
 
     payload: Dict[str, Any] = {
@@ -1419,18 +1382,11 @@ def save_mvp_catalog_cache(
     if locale_tag:
         payload["name_display_locale"] = locale_tag
 
-    def write_to(wfp: str) -> None:
-        parent = os.path.dirname(wfp)
-        if parent:
-            os.makedirs(parent, exist_ok=True)
-        with open(wfp, "w", encoding="utf-8") as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
-
-    if path is not None:
-        write_to(path)
+    if path is None:
+        database.set_document(database.DOC_MVP_CATALOG, payload)
         return
-    try:
-        write_to(MVP_CATALOG_PORTABLE_FILE)
-    except OSError as e:
-        logger.warning("gravar catálogo MVP local: %s — a usar perfil do utilizador", e)
-        write_to(MVP_CATALOG_CACHE_FILE_LEGACY)
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)

@@ -4,17 +4,15 @@ Build Simulator — lógica de slots, preços por refino/cartas e alertas por cu
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 import re
 import uuid
 from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-logger = logging.getLogger(__name__)
+from gdz_monitor.core import database
 
-BUILDS_FILE = os.path.join(os.path.expanduser("~"), "herosaga_builds.json")
+logger = logging.getLogger(__name__)
 
 # Ordem visual: coluna esquerda (top→bottom), coluna direita (top→bottom)
 BUILD_SLOT_LEFT = (
@@ -67,11 +65,8 @@ def default_layer_state() -> Dict[str, Dict[str, Any]]:
 
 
 def load_builds_file() -> dict:
-    if not os.path.exists(BUILDS_FILE):
-        return {"version": 1, "saved": []}
     try:
-        with open(BUILDS_FILE, "r", encoding="utf-8") as f:
-            raw = json.load(f)
+        raw = database.get_document(database.DOC_BUILDS)
         if not isinstance(raw, dict):
             return {"version": 1, "saved": []}
         raw.setdefault("version", 1)
@@ -89,8 +84,7 @@ def save_builds_file(data: dict) -> None:
         merged.update(data)
     if not isinstance(merged.get("saved"), list):
         merged["saved"] = []
-    with open(BUILDS_FILE, "w", encoding="utf-8") as f:
-        json.dump(merged, f, ensure_ascii=False, indent=2)
+    database.set_document(database.DOC_BUILDS, merged)
 
 
 def _refinement(s: dict) -> int:

@@ -245,7 +245,7 @@ def main() -> None:
     if mid_ov or norm_ov:
         print(f"Overrides {RO_STEM_OVERRIDES_FILE.name}: {len(mid_ov)} id, {len(norm_ov)} norm")
 
-    items = load_mvp_catalog_cache(max_age_seconds=None) or []
+    items = load_mvp_catalog_cache(max_age_seconds=None, path=MVP_CATALOG_PORTABLE_FILE) or []
     out_dir = Path(MVP_SPRITES_DIR)
     ok = skip = fail = 0
     tail_on = not args.no_tail_match

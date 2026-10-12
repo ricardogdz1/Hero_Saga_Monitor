@@ -296,19 +296,18 @@ def download_icons(item_ids: Iterable[int], *, dry_run: bool = False) -> dict:
     if dry_run:
         return stats
 
-    from gdz_monitor.external.item_icon_cache import ensure_item_icons_dir, item_icon_disk_path, read_item_icon_png_bytes
+    from gdz_monitor.external.item_icon_cache import ensure_item_icons_dir, item_icon_is_cached, read_item_icon_png_bytes
 
     ensure_item_icons_dir()
 
     for iid in unique:
-        path = item_icon_disk_path(iid)
-        if os.path.isfile(path):
+        if item_icon_is_cached(iid):
             stats["cached"] += 1
             continue
         url = f"{BASE_URL.rstrip('/')}/?module=image&action=processicon&id={iid}"
         try:
             raw = read_item_icon_png_bytes(iid, url, _fetch_icon_bytes, base_url=BASE_URL)
-            if raw and os.path.isfile(path):
+            if raw and item_icon_is_cached(iid):
                 stats["saved"] += 1
             else:
                 stats["failed"] += 1

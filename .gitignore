@@ -67,6 +67,8 @@ data/mvp_detect_debug/
 
 # Dados locais / cache de ícones — não versionar
 data/item_icons/
+# Banco de recursos gerado no build (tools/build_resources_db.py)
+data/resources.db*
 
 # Arquivos auxiliares de imagem
 *.icc

@@ -26,16 +26,18 @@ herosaga_monitor/
 │   │   ├── herosaga_session.py#   Autenticação Discord (fluxSessionData)
 │   │   ├── herosaga_api.py    #   Endpoints do site Hero Saga
 │   │   ├── herosaga_client.py #   Cliente de alto nível
-│   │   └── persistence.py     #   Leitura/escrita dos JSON do utilizador (~)
+│   │   └── persistence.py     #   Leitura/escrita dos dados do utilizador (banco)
 │   ├── external/              # Integrações de terceiros
 │   │   ├── divine_pride_api.py#   API Divine Pride (monstros, itens)
-│   │   └── item_icon_cache.py #   Cache de ícones em data/item_icons/
+│   │   └── item_icon_cache.py #   Cache de ícones (tabela images do banco)
 │   └── core/                  # Partilhado por todas as camadas
 │       ├── constants.py       #   BASE_URL
 │       ├── paths.py           #   DATA_DIR / WEB_DIR (dev e .exe)
 │       ├── settings.py        #   Configurações do utilizador
-│       └── storage.py         #   Helpers de ficheiros JSON
-├── data/                      # Catálogo MVP, mapas, sprites (bundled no .exe)
+│       ├── database.py        #   Banco SQLite do utilizador (documentos JSON + imagens)
+│       ├── resources.py       #   Leitura de data/ (resources.db no .exe, ficheiros em dev)
+│       └── storage.py         #   Monitorados, alertas e histórico de preços
+├── data/                      # Catálogo MVP, mapas, sprites (no .exe: empacotado em resources.db)
 ├── tools/                     # Scripts de manutenção de dados (não vão no .exe)
 ├── tests/                     # Testes pytest das funções puras (rodar: pytest)
 ├── docs/                      # Esta documentação + material da calculadora de drop
@@ -89,6 +91,9 @@ app → services → adapters / external → core
 
 - Não há framework JS; a UI é HTML/CSS/JS vanilla. Os testes (pytest) cobrem
   só as funções puras de `services/` — UI e scraping ao vivo ficam de fora.
-- Dados do utilizador ficam em `~/herosaga_*.json` (ver `adapters/persistence.py`).
+- Dados do utilizador ficam no banco SQLite `%LOCALAPPDATA%\GDZMonitor\gdz_monitor.db`
+  (ver `core/database.py`); os antigos `~/herosaga_*.json` são importados na primeira execução.
+- Recursos de `data/` são lidos via `core/resources.py`; o build gera `resources.db`
+  (`tools/build_resources_db.py`, chamado pelo `.spec`).
 - O frontend antigo (Tkinter) foi removido; o histórico está no git
   (`app.py`, `core/theme.py`, `mvp_alert_sound.py` eram resquícios dele).

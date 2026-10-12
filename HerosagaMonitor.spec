@@ -1,8 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 # Build (na raiz do projecto): pyinstaller HerosagaMonitor.spec
-# Gera GDZMonitor.exe (PyWebView) com data/ e gdz_monitor/web/ embutidos.
+# Gera GDZMonitor.exe (PyWebView) com data/ (empacotada em resources.db) e gdz_monitor/web/ embutidos.
 
 import os
+import sys
 
 block_cipher = None
 
@@ -13,8 +14,16 @@ _web_dir = os.path.join(_root, "gdz_monitor", "web")
 _icon = os.path.join(_root, "assets", "icon.ico")
 _entry = os.path.join(_root, "run.py")
 
+# data/ vai para o executável como banco SQLite somente leitura (ver gdz_monitor/core/resources.py)
+if _root not in sys.path:
+    sys.path.insert(0, _root)
+from gdz_monitor.core.resources import RESOURCES_DB_NAME, build_resources_db
+
+_resources_db = os.path.join(_root, "build", RESOURCES_DB_NAME)
+print("resources.db: %d ficheiros de data/" % build_resources_db(_resources_db))
+
 _datas = [
-    (os.path.join(_root, "data"), "data"),
+    (_resources_db, "data"),
     (_web_dir, os.path.join("gdz_monitor", "web")),
 ]
 

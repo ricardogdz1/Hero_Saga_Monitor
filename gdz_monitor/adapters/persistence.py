@@ -1,11 +1,8 @@
-"""Persistência em JSON (dados do utilizador)."""
+"""Persistência dos dados do utilizador (banco SQLite local — ver ``core/database.py``)."""
 from __future__ import annotations
 
 from gdz_monitor.core import storage
 
-DATA_FILE = storage.DATA_FILE
-PRICES_HISTORY_FILE = storage.PRICES_HISTORY_FILE
-ALERTS_FILE = storage.ALERTS_FILE
 DEFAULT_MONITOR_CATEGORIES = storage.DEFAULT_MONITOR_CATEGORIES
 _ALERTS_IO_LOCK = storage._ALERTS_IO_LOCK
 

@@ -50,12 +50,14 @@ O `.exe` usa PyWebView (mesma UI que `python run.py`) e inclui a pasta `data/` p
 
 ## Dados salvos
 
-O app salva seus dados na pasta do utilizador (`~`), por exemplo:
+O app guarda todos os dados (monitorados, configurações, alertas, histórico de preços,
+timers MVP, grupos de auto loot, builds e o cache de imagens) num banco SQLite local:
 
-- `herosaga_monitor_data.json` — monitorados e categorias
-- `herosaga_monitor_settings.json` — configurações
-- `herosaga_mvp_timers.json` — timers MVP
-- `herosaga_loot_groups.json` — grupos de auto loot
+- Windows: `%LOCALAPPDATA%\GDZMonitor\gdz_monitor.db`
+- Outros sistemas: `~/.gdz_monitor/gdz_monitor.db`
+
+Na primeira execução, os antigos `~/herosaga_*.json` (e os ícones/imagens em cache) são
+importados automaticamente; os ficheiros originais ficam intocados como backup.
 
 ## API utilizada
 

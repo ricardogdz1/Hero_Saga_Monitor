@@ -8,7 +8,6 @@ acessíveis no front-end via ``window.pywebview.api.<metodo>()``.
 from __future__ import annotations
 
 import base64
-import os
 import re
 from datetime import datetime
 
@@ -1910,10 +1909,10 @@ class Api:
         import base64 as _b64
 
         from gdz_monitor.services.drop_calculator import (
-            buff_icon_path,
             load_buff_catalog_raw,
             load_pet_grades,
             load_reputation_tiers,
+            read_buff_icon_bytes,
         )
 
         try:
@@ -1926,11 +1925,10 @@ class Api:
                 for b in g.get("buffs") or []:
                     row = dict(b)
                     icon_file = str(row.get("icon_file") or "")
-                    path = buff_icon_path(icon_file)
+                    icon_bytes = read_buff_icon_bytes(icon_file)
                     icon_uri = ""
-                    if icon_file and os.path.isfile(path):
-                        with open(path, "rb") as fh:
-                            icon_uri = "data:image/png;base64," + _b64.b64encode(fh.read()).decode("ascii")
+                    if icon_bytes:
+                        icon_uri = "data:image/png;base64," + _b64.b64encode(icon_bytes).decode("ascii")
                     row["icon"] = icon_uri
                     track = str(row.get("tier_track") or "")
                     if track and track in tiers:

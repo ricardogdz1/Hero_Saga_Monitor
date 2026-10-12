@@ -35,6 +35,7 @@ if str(_ROOT) not in sys.path:
 
 from gdz_monitor.services.mvp_timer import (  # noqa: E402
     MVP_CATALOG_DATA_DIR,
+    MVP_CATALOG_PORTABLE_FILE,
     MVP_SPRITES_DIR,
     load_mvp_catalog_cache,
     mvp_catalog_entry_skipped,
@@ -67,7 +68,7 @@ def _load_overrides() -> Dict[str, int]:
 
 
 def _catalog_norm_to_ids() -> Tuple[Dict[str, List[int]], Dict[int, str]]:
-    items = load_mvp_catalog_cache(max_age_seconds=None) or []
+    items = load_mvp_catalog_cache(max_age_seconds=None, path=MVP_CATALOG_PORTABLE_FILE) or []
     norm_to_ids: Dict[str, List[int]] = {}
     id_to_name: Dict[int, str] = {}
     for it in items:

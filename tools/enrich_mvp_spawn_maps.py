@@ -171,7 +171,7 @@ def main() -> None:
         )
         sys.exit(1)
 
-    items = load_mvp_catalog_cache(max_age_seconds=None)
+    items = load_mvp_catalog_cache(max_age_seconds=None, path=MVP_CATALOG_PORTABLE_FILE)
     if not items:
         print(f"Catálogo vazio ou inválido: {MVP_CATALOG_PORTABLE_FILE}")
         sys.exit(1)
@@ -238,7 +238,7 @@ def main() -> None:
         time.sleep(max(0.0, args.delay))
 
     try:
-        save_mvp_catalog_cache(items, name_display_locale="en")
+        save_mvp_catalog_cache(items, path=MVP_CATALOG_PORTABLE_FILE, name_display_locale="en")
     except OSError as ex:
         print(f"Erro a gravar catálogo: {ex}")
         sys.exit(1)

@@ -18,7 +18,7 @@ Pastas-chave (tudo dentro do pacote `gdz_monitor/`):
 - `services/` — regras de negócio: `mvp_timer.py`, `loot_manager.py`, `alert_monitor.py`, `drop_calculator.py` + subpacotes `market/` (busca, histórico, lojas, preços — `runtime.py` é a fachada usada pela app) e `build/` (simulador: `simulator.py`, `characters.py`, `stats.py`)
 - `adapters/` — HTTP (`network.py`), scraping do site (`herosaga_api.py`), sessão Discord (`herosaga_session.py`), persistência (`persistence.py`)
 - `external/` — Divine Pride (`divine_pride_api.py`) e cache de ícones (`item_icon_cache.py`)
-- `core/` — `constants.py` (BASE_URL), `paths.py` (DATA_DIR/WEB_DIR, dev e .exe), `settings.py`, `storage.py`
+- `core/` — `constants.py` (BASE_URL), `paths.py` (DATA_DIR/WEB_DIR, dev e .exe), `settings.py`, `storage.py`, `database.py` (SQLite do usuário), `resources.py` (leitura de `data/`)
 
 Fora do pacote:
 - `data/` — dados bundled (MVP, drops, sprites); caminhos resolvidos via `gdz_monitor/core/paths.py`
@@ -37,7 +37,7 @@ home | build | mvp | loot | alerts | drop-calc | config
 - Ícones sempre via `gdz_monitor/external/item_icon_cache.py` (base64 data URI)
 - Autenticação Discord: cookie fluxSessionData; métodos podem retornar discord_auth_required
 - Moedas: zeny, rmt, hero_points
-- Dados do usuário ficam em ~/herosaga_*.json
+- Dados do usuário ficam no SQLite `%LOCALAPPDATA%\GDZMonitor\gdz_monitor.db` via `core/database.py` (documentos JSON + imagens); recursos de `data/` são lidos via `core/resources.py` (nunca `open()` direto)
 - Sem framework JS. Testes: pytest em `tests/` (só funções puras de services/ — nada de UI nem rede); rodar `pytest` na raiz
 - Não commitar secrets (.env, senhas SMTP, API keys)
 - Não criar arquivos de documentação a menos que eu peça

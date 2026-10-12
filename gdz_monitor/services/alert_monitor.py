@@ -4,18 +4,15 @@ Lógica de verificação de alertas de preço (filtro por moeda, condição, loj
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 import smtplib
 import ssl
 from email.mime.text import MIMEText
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-logger = logging.getLogger(__name__)
+from gdz_monitor.adapters.persistence import load_prices_history
 
-# Mesmo ficheiro que app_runtime (histórico de vendas/preços por item).
-PRICES_HISTORY_FILE = os.path.join(os.path.expanduser("~"), "herosaga_prices_history.json")
+logger = logging.getLogger(__name__)
 
 FetchStoresFn = Callable[[int, str], Tuple[List[dict], dict]]
 
@@ -112,14 +109,12 @@ def filter_history_entries_by_currency(entries: List[dict], wanted: str) -> List
 
 
 def _load_prices_history_raw() -> dict:
-    if os.path.exists(PRICES_HISTORY_FILE):
-        try:
-            with open(PRICES_HISTORY_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return data if isinstance(data, dict) else {}
-        except Exception as e:
-            logger.debug("Histórico de preços: leitura falhou: %s", e)
-    return {}
+    try:
+        data = load_prices_history()
+    except Exception as e:
+        logger.debug("Histórico de preços: leitura falhou: %s", e)
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _history_entries_for_item(item_id: int) -> List[dict]:

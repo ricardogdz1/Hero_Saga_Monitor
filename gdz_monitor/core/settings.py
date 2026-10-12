@@ -2,11 +2,10 @@
 Configurações globais do GDZ Monitor (SMTP, e-mail, início com Windows).
 """
 
-import json
 import os
 import sys
 
-SETTINGS_FILE = os.path.join(os.path.expanduser("~"), "herosaga_monitor_settings.json")
+from gdz_monitor.core import database
 
 DEFAULT_SETTINGS = {
     "notify_email": "",
@@ -38,14 +37,9 @@ DEFAULT_SETTINGS = {
 
 def load_settings() -> dict:
     out = dict(DEFAULT_SETTINGS)
-    if os.path.exists(SETTINGS_FILE):
-        try:
-            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            if isinstance(data, dict):
-                out.update(data)
-        except Exception:
-            pass
+    data = database.get_document(database.DOC_SETTINGS)
+    if isinstance(data, dict):
+        out.update(data)
     try:
         out["smtp_port"] = int(out.get("smtp_port") or 587)
     except (TypeError, ValueError):
@@ -82,8 +76,7 @@ def load_settings() -> dict:
 def save_settings(settings: dict) -> None:
     merged = dict(DEFAULT_SETTINGS)
     merged.update(settings)
-    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
-        json.dump(merged, f, ensure_ascii=False, indent=2)
+    database.set_document(database.DOC_SETTINGS, merged)
 
 
 def _autostart_command() -> str:

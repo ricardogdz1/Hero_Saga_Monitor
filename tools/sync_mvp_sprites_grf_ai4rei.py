@@ -273,7 +273,7 @@ def main() -> None:
         print(f"Sem catálogo: {MVP_CATALOG_PORTABLE_FILE}")
         sys.exit(1)
 
-    items = load_mvp_catalog_cache(max_age_seconds=None) or []
+    items = load_mvp_catalog_cache(max_age_seconds=None, path=MVP_CATALOG_PORTABLE_FILE) or []
     prev_map = _load_base_sprite_id_map()
 
     computed: Dict[int, str] = {}
