@@ -14,6 +14,9 @@ Regras de cumulatividade (FUCIONAMENTO DOS BUFFS DE DROPS CON.txt):
 - Demais itens/bônus cumulam entre si.
 - Reputação Bio + Cheffênia + Temporada somam entre si.
 - Ascensão soma com o restante.
+
+Chance de Drop Final (Ascensão 16–20) é um bônus separado do drop comum —
+ver ``FINAL_DROP_MODE`` / ``apply_final_drop``.
 """
 
 from __future__ import annotations
@@ -33,6 +36,11 @@ _DROP_BUFF_ICONS_DIR = "drop_buff_icons"
 _DROP_ITEM_ID_MAP_FILE = "drop_item_id_map.json"
 
 MEGA_DROP_EXCLUSIVE = frozenset({"calice", "chicle", "goma"})
+
+# Como o servidor aplica a «Chance de Drop Final» ainda não está confirmado.
+# - "separate_multiplier": chance * (1 + bônus comuns) * (1 + drop_final)
+# - "additive": drop_final soma junto com os bônus comuns
+FINAL_DROP_MODE = "separate_multiplier"
 _MIN_NAME_MATCH_SCORE = 5000
 
 # Itens ocultos na UI por mapa (nome normalizado ou substring).
@@ -231,6 +239,17 @@ def _tier_bonus(track: str, level: int) -> float:
     return 0.0
 
 
+def _tier_final_bonus(track: str, level: int) -> float:
+    """Chance de Drop Final (%) do nível — hoje só Ascensão 16–20 tem."""
+    tiers = load_reputation_tiers().get(track) or {}
+    levels = tiers.get("levels") or []
+    lv = max(0, min(int(level or 0), int(tiers.get("max_level") or 0)))
+    for row in levels:
+        if int(row.get("level") or 0) == lv:
+            return float(row.get("final_drop_pct") or 0)
+    return 0.0
+
+
 def _pet_grade_multiplier(grade_level: int) -> float:
     tiers = load_pet_grades().get("pet_grade") or {}
     levels = tiers.get("levels") or []
@@ -272,7 +291,7 @@ def compute_effective_bonus(
 
     ``buffs_state``: {buff_id: bool} para toggles de itens/bônus/pet.
     ``rep_levels``: {track: level} — bio, cheffenia, temporada, ascensao.
-    ``pet_grades``: {pet_id: grade_level} — 0=sem grade, 1=D … 4=A.
+    ``pet_grades``: {pet_id: grade_level} — 0=sem grade, 1=D … 4=A, 5=R, 6=S, 7=SS.
     """
     rep = rep_levels or {}
     grades = pet_grades or {}
@@ -280,6 +299,7 @@ def compute_effective_bonus(
 
     parts: List[dict] = []
     raw_total = 0.0
+    final_drop_total = 0.0
 
     mega_vals = []
     for bid in MEGA_DROP_EXCLUSIVE:
@@ -330,8 +350,16 @@ def compute_effective_bonus(
     asc_lv = int(rep.get("ascensao") or 0)
     if asc_lv > 0:
         asc_pct = _tier_bonus("ascensao", asc_lv)
+        asc_final = _tier_final_bonus("ascensao", asc_lv)
         raw_total += asc_pct
-        parts.append({"id": "ascensao", "bonus_pct": asc_pct, "kind": "ascension", "level": asc_lv})
+        final_drop_total += asc_final
+        parts.append({
+            "id": "ascensao",
+            "bonus_pct": asc_pct,
+            "final_drop_pct": asc_final,
+            "kind": "ascension",
+            "level": asc_lv,
+        })
 
     pet_selected = [bid for bid in _pet_buff_ids() if selected.get(bid)]
     if pet_selected:
@@ -360,6 +388,8 @@ def compute_effective_bonus(
     return {
         "bonus_raw_pct": round(raw_total, 4),
         "bonus_effective_pct": round(raw_total, 4),
+        "final_drop_pct": round(final_drop_total, 4),
+        "final_drop_mode": FINAL_DROP_MODE,
         "capped": False,
         "cap_pct": None,
         "contexto_resolved": contexto,
@@ -395,19 +425,39 @@ def _buff_fixed_bonus(buff_id: str) -> float:
     return float(defaults.get(buff_id, 0))
 
 
+def apply_final_drop(chance_pct: float, final_drop_pct: float) -> float:
+    """Aplica a Chance de Drop Final (modo ``separate_multiplier``) sobre a chance já com bônus comuns."""
+    return float(chance_pct) * (1.0 + float(final_drop_pct or 0) / 100.0)
+
+
+def _uncapped_chance(
+    base_pct: float,
+    bonus_pct: float,
+    formula: str,
+    final_drop_pct: float = 0.0,
+) -> float:
+    base = float(base_pct or 0)
+    bonus = float(bonus_pct or 0)
+    final_drop = float(final_drop_pct or 0)
+    if FINAL_DROP_MODE == "additive":
+        bonus += final_drop
+        final_drop = 0.0
+    if formula == "additive":
+        chance = base + bonus
+    else:
+        chance = base * (1.0 + bonus / 100.0)
+    return apply_final_drop(chance, final_drop)
+
+
 def compute_final_chance(
     base_pct: float,
     bonus_effective_pct: float,
     *,
     formula: str = "multiplicative",
     item_chance_cap: Optional[float] = None,
+    final_drop_pct: float = 0.0,
 ) -> float:
-    base = float(base_pct or 0)
-    bonus = float(bonus_effective_pct or 0)
-    if formula == "additive":
-        final = base + bonus
-    else:
-        final = base * (1.0 + bonus / 100.0)
+    final = _uncapped_chance(base_pct, bonus_effective_pct, formula, final_drop_pct)
     if item_chance_cap is not None:
         final = min(final, float(item_chance_cap))
     final = min(final, 100.0)
@@ -432,16 +482,15 @@ def compute_drop_row(
     formula = lookup_drop_formula(map_id, item_nome, secao)
     item_cap = lookup_item_chance_cap(map_id, item_nome)
     bonus = bonus_info["bonus_raw_pct"]
+    final_drop = bonus_info["final_drop_pct"]
     base = float(base_pct or 0)
-    if formula == "additive":
-        uncapped = base + bonus
-    else:
-        uncapped = base * (1.0 + bonus / 100.0)
+    uncapped = _uncapped_chance(base, bonus, formula, final_drop)
     final_pct = compute_final_chance(
         base_pct,
         bonus,
         formula=formula,
         item_chance_cap=item_cap,
+        final_drop_pct=final_drop,
     )
     item_capped = item_cap is not None and uncapped > float(item_cap)
     chance_max_capped = uncapped > 100.0 and final_pct >= 100.0

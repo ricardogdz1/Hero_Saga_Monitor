@@ -87,7 +87,7 @@
   },
   "ascensao": {
     "nome": "Ascensão",
-    "max_level": 15,
+    "max_level": 20,
     "bonus_per_level_pct": 4,
     "levels": [
       {
@@ -169,6 +169,36 @@
         "level": 15,
         "bonus_pct": 60,
         "label": "Nível 15 (+60% drop)"
+      },
+      {
+        "level": 16,
+        "bonus_pct": 60,
+        "final_drop_pct": 1,
+        "label": "Nível 16 (+60% drop, +1% drop final)"
+      },
+      {
+        "level": 17,
+        "bonus_pct": 60,
+        "final_drop_pct": 2,
+        "label": "Nível 17 (+60% drop, +2% drop final)"
+      },
+      {
+        "level": 18,
+        "bonus_pct": 60,
+        "final_drop_pct": 3,
+        "label": "Nível 18 (+60% drop, +3% drop final)"
+      },
+      {
+        "level": 19,
+        "bonus_pct": 60,
+        "final_drop_pct": 4,
+        "label": "Nível 19 (+60% drop, +4% drop final)"
+      },
+      {
+        "level": 20,
+        "bonus_pct": 60,
+        "final_drop_pct": 5,
+        "label": "Nível 20 (+60% drop, +5% drop final)"
       }
     ]
   }

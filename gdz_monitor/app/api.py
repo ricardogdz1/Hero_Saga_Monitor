@@ -551,9 +551,8 @@ class Api:
     @_catch_herosaga_auth
     def refresh_prices(self) -> dict:
         """Atualiza os menores preços de todos os itens monitorados e devolve a Home nova."""
-        data = load_data()
-        monitored = list(data.get("monitored") or [])
-        updated = 0
+        monitored = list(load_data().get("monitored") or [])
+        updates = {}
         for m in monitored:
             iid = m.get("id")
             if iid is None:
@@ -570,22 +569,36 @@ class Api:
                 raise
             except Exception:  # noqa: BLE001 — falha de rede num item não trava o lote
                 continue
-            m["min_prices"] = sale_min_prices_from_stores(stores or [])
-            m["home_prices_updated_at"] = datetime.now().isoformat()
-            if (meta or {}).get("item_icon_url") and not m.get("item_icon_url"):
-                m["item_icon_url"] = meta["item_icon_url"]
+            upd = {
+                "min_prices": sale_min_prices_from_stores(stores or []),
+                "home_prices_updated_at": datetime.now().isoformat(),
+            }
+            if (meta or {}).get("item_icon_url"):
+                upd["item_icon_url"] = meta["item_icon_url"]
+            updates[iid_int] = upd
             try:
                 _collect_history_if_monitored(iid_int)
             except HerosagaAuthRequired:
                 raise
             except Exception:  # noqa: BLE001
                 pass
-            updated += 1
-        data["monitored"] = monitored
-        try:
-            save_data(data)
-        except Exception:  # noqa: BLE001
-            pass
+        # Recarrega antes de gravar: o lote leva minutos e o usuário pode ter
+        # editado a Home (itens, categorias, lojas) nesse meio-tempo.
+        if updates:
+            data = load_data()
+            for m in data.get("monitored") or []:
+                upd = updates.get(_as_int(m.get("id")))
+                if not upd:
+                    continue
+                m["min_prices"] = upd["min_prices"]
+                m["home_prices_updated_at"] = upd["home_prices_updated_at"]
+                if upd.get("item_icon_url") and not m.get("item_icon_url"):
+                    m["item_icon_url"] = upd["item_icon_url"]
+            try:
+                save_data(data)
+            except Exception:  # noqa: BLE001
+                pass
+        updated = len(updates)
         result = self.get_home()
         result["refreshed"] = updated
         return result
@@ -791,6 +804,11 @@ class Api:
         if prices:
             entry["min_prices"] = dict(prices)
 
+        # Recarrega após a consulta de rede para não sobrescrever edições concorrentes.
+        data = load_data()
+        monitored = list(data.get("monitored") or [])
+        if any(_as_int(m.get("id")) == iid for m in monitored):
+            return {"ok": False, "error": "já monitorado", **self.get_home()}
         monitored.append(entry)
         data["monitored"] = monitored
         save_data(data)
@@ -2036,6 +2054,236 @@ class Api:
             "icons": with_icons,
             "from_cache": resolved_ids,
         }
+
+    # ── Minhas Lojas ───────────────────────────────────────────
+    @staticmethod
+    def _my_shops_list_from(data: dict) -> list:
+        shops = data.get("my_shops")
+        return shops if isinstance(shops, list) else []
+
+    @staticmethod
+    def _my_shops_find(shops: list, vendor_id: int):
+        for entry in shops:
+            if isinstance(entry, dict) and _as_int(entry.get("vendor_id")) == vendor_id:
+                return entry
+        return None
+
+    def _my_shops_payload(self, shops: list) -> dict:
+        from gdz_monitor.services.market.my_shops import shop_summary
+
+        summaries = [shop_summary(e) for e in shops if isinstance(e, dict)]
+        icon_pairs = [
+            (r.get("item_id"), r.get("icon_url") or "")
+            for s in summaries
+            for r in s.get("items") or []
+        ]
+        icons_map = _icon_map_for_pairs(icon_pairs)
+        for s in summaries:
+            for r in s.get("items") or []:
+                iid = _as_int(r.get("item_id"))
+                r["icon"] = _icon_from_map(iid, r.get("icon_url") or "", icons_map) if iid else ""
+        return {"ok": True, "shops": summaries}
+
+    @staticmethod
+    def _my_shops_apply_shop_data(entry: dict, shop: dict) -> None:
+        """Atualiza metadados + snapshot atual de uma loja a partir do viewshop."""
+        from gdz_monitor.services.market.my_shops import snapshot_from_shop
+
+        now = datetime.now().isoformat()
+        entry["char_name"] = str(shop.get("vendor_name") or entry.get("char_name") or "—")
+        entry["shop_title"] = str(shop.get("shop_title") or entry.get("shop_title") or "Loja")
+        entry["currency"] = _norm_currency(str(shop.get("currency") or entry.get("currency") or ""))
+        entry["avatar_url"] = str(shop.get("avatar_url") or entry.get("avatar_url") or "")
+        entry["go_cmd"] = str(shop.get("go_cmd") or entry.get("go_cmd") or "")
+        entry["navi_cmd"] = str(shop.get("navi_cmd") or entry.get("navi_cmd") or "")
+        entry["last_snapshot"] = snapshot_from_shop(shop, taken_at=now)
+        entry["status"] = "open"
+        entry["status_error"] = ""
+        entry["updated_at"] = now
+
+    def my_shops_list(self) -> dict:
+        """Lojas monitoradas com resumo (sem rede — usa os snapshots salvos)."""
+        return self._my_shops_payload(self._my_shops_list_from(load_data()))
+
+    @_catch_herosaga_auth
+    def my_shops_add(self, vendor_ref) -> dict:
+        """Registra uma loja (por ID ou link viewshop) e grava o baseline."""
+        from gdz_monitor.services.market.my_shops import parse_vendor_ref
+        from gdz_monitor.services.market.vendor_shop import fetch_vendor_shop
+
+        vid = parse_vendor_ref(vendor_ref)
+        if vid is None:
+            return {"ok": False, "error": "Informe o ID ou o link da loja (viewshop)."}
+
+        data = load_data()
+        shops = self._my_shops_list_from(data)
+        if self._my_shops_find(shops, vid) is not None:
+            return {"ok": False, "error": "Esta loja já está monitorada."}
+
+        try:
+            shop = fetch_vendor_shop(vid, force_refresh=True)
+        except HerosagaAuthRequired:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+        if not shop.get("ok"):
+            return {"ok": False, "error": shop.get("error") or "Não foi possível carregar a loja."}
+        if not shop.get("items"):
+            return {"ok": False, "error": "A loja está aberta mas sem itens — nada para monitorar."}
+
+        now = datetime.now().isoformat()
+        entry = {"vendor_id": vid, "costs": {}, "added_at": now}
+        self._my_shops_apply_shop_data(entry, shop)
+        entry["baseline"] = entry["last_snapshot"]
+
+        # Recarrega após a rede para não sobrescrever edições concorrentes.
+        data = load_data()
+        shops = self._my_shops_list_from(data)
+        if self._my_shops_find(shops, vid) is not None:
+            return {"ok": False, "error": "Esta loja já está monitorada."}
+        shops.append(entry)
+        data["my_shops"] = shops
+        save_data(data)
+        result = self._my_shops_payload(shops)
+        result["added"] = vid
+        return result
+
+    @_catch_herosaga_auth
+    def my_shops_refresh(self, vendor_id=None) -> dict:
+        """Recarrega snapshot de uma loja (ou de todas) e recalcula o resumo."""
+        from gdz_monitor.services.market.vendor_shop import fetch_vendor_shop
+
+        want = _as_int(vendor_id)
+        fetched = {}
+        for entry in self._my_shops_list_from(load_data()):
+            if not isinstance(entry, dict):
+                continue
+            vid = _as_int(entry.get("vendor_id"))
+            if vid is None or (want is not None and vid != want):
+                continue
+            try:
+                fetched[vid] = fetch_vendor_shop(vid, force_refresh=True)
+            except HerosagaAuthRequired:
+                raise
+            except Exception as exc:  # noqa: BLE001
+                fetched[vid] = {"ok": False, "error": str(exc)}
+
+        # Recarrega após a rede para não sobrescrever edições concorrentes
+        # (custos, lojas adicionadas/removidas, itens da Home).
+        data = load_data()
+        shops = self._my_shops_list_from(data)
+        touched = 0
+        for entry in shops:
+            if not isinstance(entry, dict):
+                continue
+            shop = fetched.get(_as_int(entry.get("vendor_id")))
+            if shop is None:
+                continue
+            if shop.get("ok"):
+                # Loja aberta e vazia = vendeu tudo (snapshot atual sem itens).
+                self._my_shops_apply_shop_data(entry, shop)
+            else:
+                # Loja fechada/offline: NÃO recalcular vendas — mantém o último
+                # snapshot conhecido e só marca o estado.
+                entry["status"] = "offline"
+                entry["status_error"] = str(shop.get("error") or "Loja indisponível.")
+                entry["updated_at"] = datetime.now().isoformat()
+            touched += 1
+        data["my_shops"] = shops
+        save_data(data)
+        result = self._my_shops_payload(shops)
+        result["refreshed"] = touched
+        return result
+
+    def my_shops_detail(self, vendor_id) -> dict:
+        """Detalhe de uma loja: linhas vendido/restante/lucro (usa dados salvos)."""
+        from gdz_monitor.services.market.my_shops import diff_shop, shop_summary
+
+        data = load_data()
+        entry = self._my_shops_find(self._my_shops_list_from(data), _as_int(vendor_id) or 0)
+        if entry is None:
+            return {"ok": False, "error": "Loja não encontrada."}
+
+        diff = diff_shop(
+            entry.get("baseline") or {},
+            entry.get("last_snapshot") or entry.get("baseline") or {},
+            costs=entry.get("costs") or {},
+        )
+        rows = diff["rows"]
+        icons_map = _icon_map_for_pairs([
+            (r.get("item_id"), r.get("icon_url") or "") for r in rows
+        ])
+        for r in rows:
+            iid = _as_int(r.get("item_id"))
+            r["icon"] = _icon_from_map(iid, r.get("icon_url") or "", icons_map) if iid else ""
+        return {"ok": True, "shop": shop_summary(entry), "rows": rows, "totals": diff["totals"]}
+
+    def my_shops_remove(self, vendor_id) -> dict:
+        vid = _as_int(vendor_id)
+        data = load_data()
+        shops = self._my_shops_list_from(data)
+        kept = [e for e in shops if not (isinstance(e, dict) and _as_int(e.get("vendor_id")) == vid)]
+        if len(kept) == len(shops):
+            return {"ok": False, "error": "Loja não encontrada."}
+        data["my_shops"] = kept
+        save_data(data)
+        return self._my_shops_payload(kept)
+
+    @_catch_herosaga_auth
+    def my_shops_reset_baseline(self, vendor_id) -> dict:
+        """Nova sessão de venda: o estoque atual passa a ser o novo baseline."""
+        from gdz_monitor.services.market.vendor_shop import fetch_vendor_shop
+
+        vid = _as_int(vendor_id)
+        data = load_data()
+        shops = self._my_shops_list_from(data)
+        entry = self._my_shops_find(shops, vid or 0)
+        if entry is None:
+            return {"ok": False, "error": "Loja não encontrada."}
+
+        try:
+            shop = fetch_vendor_shop(vid, force_refresh=True)
+        except HerosagaAuthRequired:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+        if not shop.get("ok"):
+            return {"ok": False, "error": shop.get("error") or "Não foi possível carregar a loja."}
+
+        # Recarrega após a rede para não sobrescrever edições concorrentes.
+        data = load_data()
+        shops = self._my_shops_list_from(data)
+        entry = self._my_shops_find(shops, vid or 0)
+        if entry is None:
+            return {"ok": False, "error": "Loja não encontrada."}
+        self._my_shops_apply_shop_data(entry, shop)
+        entry["baseline"] = entry["last_snapshot"]
+        data["my_shops"] = shops
+        save_data(data)
+        return self._my_shops_payload(shops)
+
+    def my_shops_set_cost(self, vendor_id, item_key, cost) -> dict:
+        """Custo de aquisição por unidade de um item (para lucro líquido)."""
+        vid = _as_int(vendor_id)
+        data = load_data()
+        shops = self._my_shops_list_from(data)
+        entry = self._my_shops_find(shops, vid or 0)
+        if entry is None:
+            return {"ok": False, "error": "Loja não encontrada."}
+
+        costs = entry.get("costs")
+        if not isinstance(costs, dict):
+            costs = {}
+        key = str(item_key or "")
+        value = _optional_float(cost)
+        if value is None or value <= 0:
+            costs.pop(key, None)
+        else:
+            costs[key] = value
+        entry["costs"] = costs
+        data["my_shops"] = shops
+        save_data(data)
+        return self.my_shops_detail(vid)
 
     def ping(self) -> str:
         return "ok"

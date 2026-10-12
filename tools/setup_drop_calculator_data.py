@@ -134,11 +134,16 @@ def main() -> None:
         },
         "ascensao": {
             "nome": "Ascensão",
-            "max_level": 15,
+            "max_level": 20,
             "bonus_per_level_pct": 4,
             "levels": [
                 {"level": lv, "bonus_pct": lv * 4, "label": f"Nível {lv} (+{lv * 4}% drop)" if lv else "Nível 0"}
                 for lv in range(16)
+            ] + [
+                # 16–20: não somam mais drop comum; +1% de Drop Final por nível.
+                {"level": lv, "bonus_pct": 60, "final_drop_pct": lv - 15,
+                 "label": f"Nível {lv} (+60% drop, +{lv - 15}% drop final)"}
+                for lv in range(16, 21)
             ],
         },
     }
@@ -148,13 +153,16 @@ def main() -> None:
     pet_grades = {
         "pet_grade": {
             "nome": "Grade do Pet",
-            "max_level": 4,
+            "max_level": 7,
             "levels": [
                 {"level": 0, "grade": "", "multiplier_pct": 0, "label": "Sem grade"},
                 {"level": 1, "grade": "D", "multiplier_pct": 40, "label": "Grade D (+40% sobre o pet)"},
                 {"level": 2, "grade": "C", "multiplier_pct": 80, "label": "Grade C (+80% sobre o pet)"},
                 {"level": 3, "grade": "B", "multiplier_pct": 100, "label": "Grade B (+100% sobre o pet)"},
                 {"level": 4, "grade": "A", "multiplier_pct": 150, "label": "Grade A (+150% sobre o pet)"},
+                {"level": 5, "grade": "R", "multiplier_pct": 200, "label": "Grade R (+200% sobre o pet)"},
+                {"level": 6, "grade": "S", "multiplier_pct": 250, "label": "Grade S (+250% sobre o pet)"},
+                {"level": 7, "grade": "SS", "multiplier_pct": 300, "label": "Grade SS (+300% sobre o pet)"},
             ],
         },
     }

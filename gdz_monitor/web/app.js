@@ -201,6 +201,7 @@ const view = () => document.getElementById("view");
 // ── Router ─────────────────────────────────────────────────
 const ROUTES = {
   home: renderHome,
+  "my-shops": renderMyShops,
   build: renderBuild,
   mvp: renderMvp,
   loot: renderLoot,
@@ -3910,6 +3911,587 @@ function bindVendorStoreRows(container) {
 
 document.getElementById("vendor-shop-backdrop")?.addEventListener("click", closeTopVendorShopModal);
 
+// ── Minhas Lojas ───────────────────────────────────────────
+let MYSHOPS = [];
+
+function fmtCur(currency, v) {
+  const cur = CURRENCY[currency] || CURRENCY.zeny;
+  return `${cur.fmt(v)} ${cur.label}`;
+}
+
+function fmtWhen(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+function renderMyShops() {
+  head().innerHTML = `
+    <div class="ph-title">
+      <h2>Minhas Lojas</h2>
+      <p>Acompanhe o que suas lojas em autotrade já venderam e o que falta vender</p>
+    </div>
+    <div class="home-toolbar">
+      <div class="home-toolbar-left">
+        <div class="home-catalog-field search-accent myshops-add-field">
+          <svg viewBox="0 0 24 24" class="search-ic" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M4 9v11h16V9M3 9h18M9 20v-6h6v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <input id="myshops-ref-input" type="text" placeholder="Cole o link ou ID da loja (viewshop)…" autocomplete="off" title="Link ...action=viewshop&id=NNN ou só o número" />
+          <button type="button" id="myshops-add-btn" class="btn-catalog-go" title="Monitorar loja pelo link/ID">
+            <span class="btn-catalog-label">Monitorar loja</span>
+          </button>
+        </div>
+      </div>
+      <div class="home-toolbar-right">
+        <button id="myshops-locate" class="btn-refresh" title="Não sabe o link? Localize a loja pesquisando um item que ela vende">
+          <svg viewBox="0 0 24 24" class="search-ic" aria-hidden="true"><path d="M21 21l-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>Localizar por item</span>
+        </button>
+        <button id="myshops-refresh" class="btn-refresh" title="Atualizar todas as lojas monitoradas">
+          <svg viewBox="0 0 24 24" class="refresh-ic"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Atualizar tudo</span>
+        </button>
+      </div>
+    </div>`;
+
+  view().innerHTML = `<div class="myshops-wrap"><div class="drawer-state"><div class="spinner"></div>Carregando lojas…</div></div>`;
+
+  document.getElementById("myshops-add-btn").addEventListener("click", myShopsAddFromInput);
+  document.getElementById("myshops-ref-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") myShopsAddFromInput();
+  });
+  document.getElementById("myshops-locate").addEventListener("click", openMyShopsLocateModal);
+  document.getElementById("myshops-refresh").addEventListener("click", () => myShopsRefresh(null));
+
+  loadMyShops();
+}
+
+async function loadMyShops() {
+  try {
+    const res = await window.pywebview.api.my_shops_list();
+    if (handleApiAuth(res)) return;
+    if (!res.ok) {
+      renderMyShopsError(res.error);
+      return;
+    }
+    MYSHOPS = res.shops || [];
+    renderMyShopsList();
+  } catch (err) {
+    renderMyShopsError(String(err));
+  }
+}
+
+function myShopsWrap() {
+  return document.querySelector(".myshops-wrap");
+}
+
+function renderMyShopsError(message) {
+  const wrap = myShopsWrap();
+  if (wrap) wrap.innerHTML = `<div class="drawer-state err">Erro: ${escapeHtml(message || "falha ao carregar")}</div>`;
+}
+
+function renderMyShopsList() {
+  if (CURRENT !== "my-shops") return;
+  const wrap = myShopsWrap();
+  if (!wrap) return;
+
+  if (!MYSHOPS.length) {
+    wrap.innerHTML = `
+      <div class="myshops-empty">
+        <h3>Nenhuma loja monitorada ainda</h3>
+        <p>Deixe um personagem em autotrade no jogo e registre a loja aqui para acompanhar as vendas.</p>
+        <p>Como o site não permite pesquisar por nome de jogador, há dois caminhos:</p>
+        <ol>
+          <li><strong>Localizar por item</strong> — pesquise um item que a sua loja está vendendo, abra a lista de lojas e clique em <em>Monitorar</em> na sua.</li>
+          <li><strong>Link direto</strong> — cole o link da loja (<code>…viewshop&amp;id=NNN</code>) ou só o ID no campo acima.</li>
+        </ol>
+        <button type="button" class="btn-refresh" id="myshops-empty-locate">
+          <svg viewBox="0 0 24 24" class="search-ic" aria-hidden="true"><path d="M21 21l-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>Localizar minha loja por item</span>
+        </button>
+      </div>`;
+    document.getElementById("myshops-empty-locate")?.addEventListener("click", openMyShopsLocateModal);
+    return;
+  }
+
+  wrap.innerHTML = `<div class="myshops-grid">${MYSHOPS.map(myShopCardHtml).join("")}</div>`;
+  wrap.querySelectorAll(".myshop-card").forEach((card) => {
+    const vid = Number(card.dataset.vendorId);
+    card.querySelector(".ms-refresh")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      myShopsRefresh(vid);
+    });
+    card.querySelector(".ms-reset")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      myShopsResetBaseline(vid);
+    });
+    card.querySelector(".ms-remove")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      myShopsRemove(vid);
+    });
+    card.querySelector(".ms-go")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const cmd = card.dataset.goCmd || "";
+      if (cmd) {
+        navigator.clipboard?.writeText(cmd).then(() => toast(`Copiado: ${cmd}`)).catch(() => {});
+      }
+    });
+    card.addEventListener("click", () => openMyShopDetail(vid));
+  });
+}
+
+function myShopCardItemHtml(r, currency) {
+  const cur = CURRENCY[currency] || CURRENCY.zeny;
+  const ref = r.refinement > 0 ? `+${r.refinement} ` : "";
+  const soldOut = r.initial_qty > 0 && r.current_qty === 0;
+  let qty;
+  if (soldOut) {
+    qty = `<span class="ms-item-qty done">vendido ✓</span>`;
+  } else if (r.restocked || r.new_item) {
+    qty = `<span class="ms-item-qty"><span class="ms-flag">${r.new_item ? "novo" : "reposto"}</span> ${r.current_qty} un.</span>`;
+  } else {
+    qty = `<span class="ms-item-qty"><em>${r.sold_qty}</em>/${r.initial_qty} vend.</span>`;
+  }
+  const tip = `${ref}${r.item_name} — preço un. ${cur.fmt(r.unit_price)} ${cur.label} · vendidos ${r.sold_qty} · restam ${r.current_qty}`;
+  return `<div class="ms-item${soldOut ? " sold-out" : ""}" title="${escapeHtml(tip)}">
+    <span class="ms-item-icon">${r.icon ? `<img src="${r.icon}" alt="">` : ""}</span>
+    <span class="ms-item-name">${ref ? `<span class="refine-badge">${ref.trim()}</span> ` : ""}${escapeHtml(r.item_name)}</span>
+    ${qty}
+  </div>`;
+}
+
+function myShopCardHtml(s) {
+  const t = s.totals || {};
+  const pct = Math.round((t.pct_sold || 0) * 100);
+  const offline = s.status === "offline";
+  const statusChip = offline
+    ? `<span class="ms-status off" title="${escapeHtml(s.status_error || "Loja indisponível")}">Fechada</span>`
+    : `<span class="ms-status on">Aberta</span>`;
+  const soldOut = !offline && t.initial_qty > 0 && t.current_qty === 0;
+  const restock = t.restocked_any
+    ? `<div class="ms-warn">Estoque reposto — use <strong>Nova sessão</strong> para recomeçar a contagem.</div>`
+    : "";
+  const profitLine = t.has_costs
+    ? `<div class="ms-stat"><span>Lucro líquido</span><strong style="color:var(--${s.currency})">${fmtCur(s.currency, t.profit)}</strong></div>`
+    : "";
+  const items = s.items || [];
+  const itemsHtml = items.length
+    ? `<div class="ms-items">${items.map((r) => myShopCardItemHtml(r, s.currency)).join("")}</div>`
+    : `<div class="ms-items-empty">Sem itens registrados.</div>`;
+  return `
+    <article class="myshop-card${offline ? " offline" : ""}" data-vendor-id="${s.vendor_id}" data-go-cmd="${escapeHtml(s.go_cmd || "")}" title="Clique para editar custos e ver o detalhe completo">
+      <div class="ms-head">
+        <div class="ms-title">
+          <div class="ms-char">${escapeHtml(s.char_name)}</div>
+          <div class="ms-shop">${escapeHtml(s.shop_title)}</div>
+        </div>
+        ${statusChip}
+      </div>
+      <div class="ms-progress" title="${pct}% das unidades vendidas">
+        <div class="ms-progress-bar"><span style="width:${pct}%"></span></div>
+        <div class="ms-progress-label">${soldOut ? "Tudo vendido! 🎉" : `${t.sold_qty || 0} de ${t.initial_qty || 0} un. vendidas (${pct}%)`}</div>
+      </div>
+      ${itemsHtml}
+      <div class="ms-stats">
+        <div class="ms-stat"><span>Arrecadado</span><strong style="color:var(--${s.currency})">${fmtCur(s.currency, t.revenue || 0)}</strong></div>
+        <div class="ms-stat"><span>Falta vender</span><strong>${t.current_qty || 0} un.</strong></div>
+        ${profitLine}
+      </div>
+      ${restock}
+      <div class="ms-foot">
+        <span class="ms-updated" title="Última atualização">${fmtWhen(s.updated_at)}</span>
+        <div class="ms-actions">
+          ${s.go_cmd ? `<button type="button" class="lbtn ghost ms-go" title="Copiar comando de localização (${escapeHtml(s.go_cmd)})">@go</button>` : ""}
+          <button type="button" class="lbtn ghost ms-refresh" title="Atualizar esta loja">Atualizar</button>
+          <button type="button" class="lbtn ghost ms-reset" title="Regravar o estoque atual como nova base de contagem">Nova sessão</button>
+          <button type="button" class="lbtn ghost ms-remove" title="Parar de monitorar esta loja">✕</button>
+        </div>
+      </div>
+    </article>`;
+}
+
+async function myShopsAddFromInput() {
+  const input = document.getElementById("myshops-ref-input");
+  const btn = document.getElementById("myshops-add-btn");
+  const ref = (input?.value || "").trim();
+  if (!ref) {
+    toast("Cole o link da loja (viewshop) ou o ID.");
+    return;
+  }
+  if (btn) btn.disabled = true;
+  try {
+    const res = await window.pywebview.api.my_shops_add(ref);
+    if (handleApiAuth(res)) return;
+    if (!res.ok) {
+      toast(res.error || "Não foi possível monitorar a loja.");
+      return;
+    }
+    MYSHOPS = res.shops || [];
+    if (input) input.value = "";
+    toast("Loja monitorada! Baseline do estoque registrado.");
+    renderMyShopsList();
+  } catch (err) {
+    toast("Erro: " + String(err));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function myShopsAddVendor(vendorId) {
+  const res = await window.pywebview.api.my_shops_add(String(vendorId));
+  if (handleApiAuth(res)) return false;
+  if (!res.ok) {
+    toast(res.error || "Não foi possível monitorar a loja.");
+    return false;
+  }
+  MYSHOPS = res.shops || [];
+  toast("Loja monitorada! Baseline do estoque registrado.");
+  renderMyShopsList();
+  return true;
+}
+
+async function myShopsRefresh(vendorId) {
+  const btn = document.getElementById("myshops-refresh");
+  if (btn) btn.disabled = true;
+  try {
+    const res = await window.pywebview.api.my_shops_refresh(vendorId ?? null);
+    if (handleApiAuth(res)) return;
+    if (!res.ok) {
+      toast(res.error || "Falha ao atualizar.");
+      return;
+    }
+    MYSHOPS = res.shops || [];
+    renderMyShopsList();
+    toast(vendorId ? "Loja atualizada." : "Lojas atualizadas.");
+  } catch (err) {
+    toast("Erro: " + String(err));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function myShopsResetBaseline(vendorId) {
+  if (!window.confirm("Nova sessão de venda?\n\nO estoque atual passa a ser a nova base e a contagem de vendidos recomeça do zero.")) return;
+  try {
+    const res = await window.pywebview.api.my_shops_reset_baseline(vendorId);
+    if (handleApiAuth(res)) return;
+    if (!res.ok) {
+      toast(res.error || "Falha ao redefinir.");
+      return;
+    }
+    MYSHOPS = res.shops || [];
+    renderMyShopsList();
+    toast("Nova sessão iniciada — contagem zerada.");
+  } catch (err) {
+    toast("Erro: " + String(err));
+  }
+}
+
+async function myShopsRemove(vendorId) {
+  if (!window.confirm("Parar de monitorar esta loja? O histórico de vendas dela será descartado.")) return;
+  try {
+    const res = await window.pywebview.api.my_shops_remove(vendorId);
+    if (handleApiAuth(res)) return;
+    if (!res.ok) {
+      toast(res.error || "Falha ao remover.");
+      return;
+    }
+    MYSHOPS = res.shops || [];
+    renderMyShopsList();
+    toast("Loja removida.");
+  } catch (err) {
+    toast("Erro: " + String(err));
+  }
+}
+
+// Detalhe da loja (modal): vendido × restante por item, custo editável
+async function openMyShopDetail(vendorId) {
+  const stack = vendorShopStack();
+  if (!stack) return;
+  const modal = document.createElement("div");
+  modal.className = "vendor-shop-modal myshop-detail-modal";
+  modal.innerHTML = `
+    <div class="vshop-head">
+      <div class="vshop-meta" style="flex:1"><h3>Carregando…</h3></div>
+      <button type="button" class="vshop-close" aria-label="Fechar">×</button>
+    </div>
+    ${vendorShopLoadingHtml()}`;
+  bindVendorShopModal(modal);
+  stack.appendChild(modal);
+  syncVendorShopLayer();
+  await loadMyShopDetailInto(modal, vendorId);
+}
+
+async function loadMyShopDetailInto(modal, vendorId) {
+  const stack = vendorShopStack();
+  try {
+    const res = await window.pywebview.api.my_shops_detail(vendorId);
+    if (!stack || !stack.contains(modal)) return;
+    if (handleApiAuth(res)) return;
+    if (!res.ok) {
+      modal.querySelector(".vshop-body")?.remove();
+      modal.insertAdjacentHTML("beforeend", vendorShopErrorHtml(res.error, vendorId));
+      bindVendorShopModal(modal);
+      return;
+    }
+    renderMyShopDetailModal(modal, res);
+  } catch (err) {
+    if (!stack || !stack.contains(modal)) return;
+    modal.querySelector(".vshop-body")?.remove();
+    modal.insertAdjacentHTML("beforeend", vendorShopErrorHtml(String(err), vendorId));
+    bindVendorShopModal(modal);
+  }
+}
+
+function myShopDetailRowHtml(r, currency) {
+  const cur = CURRENCY[currency] || CURRENCY.zeny;
+  const ref = r.refinement > 0 ? `<span class="refine-badge">+${r.refinement}</span> ` : "";
+  const cards = [r.slot1, r.slot2, r.slot3, r.slot4].filter(Boolean).join(", ");
+  const extras = [
+    cards ? `Cartas: ${cards}` : "",
+    r.random_options ? `Random: ${r.random_options}` : "",
+  ].filter(Boolean).join(" · ");
+  const flag = r.new_item
+    ? `<span class="ms-flag" title="Item que não estava no baseline">novo</span>`
+    : r.restocked
+      ? `<span class="ms-flag" title="Quantidade atual maior que a base — estoque reposto">reposto</span>`
+      : "";
+  const costVal = r.unit_cost != null ? String(r.unit_cost) : "";
+  const profit = r.profit != null
+    ? `<span style="color:var(--${currency})">${cur.fmt(r.profit)}</span>`
+    : `<span class="vshop-muted" title="Informe o custo unitário para calcular o lucro">—</span>`;
+  return `<tr class="${r.sold_qty > 0 ? "ms-row-sold" : ""}" data-key="${escapeHtml(r.key)}">
+    <td><div class="vshop-item-name">${r.icon ? `<img src="${r.icon}" alt="">` : ""}<span>${ref}${escapeHtml(r.item_name)}</span>${flag}</div>${extras ? `<div class="ms-row-extra">${escapeHtml(extras)}</div>` : ""}</td>
+    <td class="vshop-price">${cur.fmt(r.unit_price)}</td>
+    <td>${r.initial_qty}</td>
+    <td class="${r.sold_qty > 0 ? "ms-sold" : ""}">${r.sold_qty}</td>
+    <td>${r.current_qty}</td>
+    <td class="vshop-price">${cur.fmt(r.revenue)}</td>
+    <td><input type="number" class="ms-cost-input" min="0" step="any" placeholder="custo un." value="${costVal}" title="Custo de aquisição por unidade (para lucro líquido)"></td>
+    <td>${profit}</td>
+  </tr>`;
+}
+
+function renderMyShopDetailModal(modal, res) {
+  const s = res.shop || {};
+  const t = res.totals || {};
+  const rows = res.rows || [];
+  const pct = Math.round((t.pct_sold || 0) * 100);
+  const offline = s.status === "offline";
+  const badges = [
+    `<span class="chip ${s.currency}">${escapeHtml((CURRENCY[s.currency] || CURRENCY.zeny).label)}</span>`,
+    offline
+      ? `<span class="ms-status off" title="${escapeHtml(s.status_error || "")}">Fechada</span>`
+      : `<span class="ms-status on">Aberta</span>`,
+  ].join(" ");
+  const profitTotal = t.has_costs
+    ? ` · Lucro líquido: <strong style="color:var(--${s.currency})">${fmtCur(s.currency, t.profit)}</strong>`
+    : "";
+
+  modal.innerHTML = `
+    <div class="vshop-head">
+      <div class="vshop-meta">
+        <div class="vshop-vendor">${escapeHtml(s.char_name || "Vendedor")}</div>
+        <h3>${escapeHtml(s.shop_title || "Loja")}</h3>
+        <div class="vshop-sub">${badges}</div>
+        <div class="ms-detail-summary">
+          Vendidas <strong>${t.sold_qty || 0}</strong> de <strong>${t.initial_qty || 0}</strong> un. (${pct}%)
+          · Arrecadado: <strong style="color:var(--${s.currency})">${fmtCur(s.currency, t.revenue || 0)}</strong>${profitTotal}
+        </div>
+      </div>
+      <button type="button" class="lbtn ghost ms-detail-refresh" title="Atualizar loja agora">Atualizar</button>
+      <button type="button" class="vshop-close" aria-label="Fechar">×</button>
+    </div>
+    <div class="vshop-body">
+      ${offline ? `<div class="ms-warn">Loja fechada/indisponível — mostrando o último estoque conhecido (${fmtWhen(s.updated_at)}). As vendas não são recalculadas enquanto a loja estiver fechada.</div>` : ""}
+      <div class="vshop-table-wrap">
+        <table class="vshop-table myshop-table">
+          <thead><tr>
+            <th>Item</th><th>Preço un.</th><th>Inicial</th><th>Vendidos</th><th>Restam</th><th>Arrecadado</th><th>Custo un.</th><th>Lucro</th>
+          </tr></thead>
+          <tbody>${rows.map((r) => myShopDetailRowHtml(r, s.currency)).join("")}</tbody>
+        </table>
+      </div>
+      <div class="ms-detail-foot">Baseline: estoque registrado no momento do monitoramento (ou da última "Nova sessão"). Custo unitário é opcional — preencha para ver o lucro líquido.</div>
+    </div>`;
+
+  bindVendorShopModal(modal);
+  modal.querySelector(".ms-detail-refresh")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      const r = await window.pywebview.api.my_shops_refresh(s.vendor_id);
+      if (handleApiAuth(r)) return;
+      if (r.ok) {
+        MYSHOPS = r.shops || [];
+        renderMyShopsList();
+      }
+      await loadMyShopDetailInto(modal, s.vendor_id);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  modal.querySelectorAll(".ms-cost-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const key = input.closest("tr")?.dataset.key || "";
+      try {
+        const r = await window.pywebview.api.my_shops_set_cost(s.vendor_id, key, input.value === "" ? null : Number(input.value));
+        if (handleApiAuth(r)) return;
+        if (!r.ok) {
+          toast(r.error || "Falha ao salvar custo.");
+          return;
+        }
+        renderMyShopDetailModal(modal, r);
+        loadMyShops();
+      } catch (err) {
+        toast("Erro: " + String(err));
+      }
+    });
+  });
+}
+
+// Localizar a própria loja pesquisando um item que ela vende
+function openMyShopsLocateModal() {
+  const stack = vendorShopStack();
+  if (!stack) return;
+  const modal = document.createElement("div");
+  modal.className = "vendor-shop-modal myshops-locate-modal";
+  stack.appendChild(modal);
+  syncVendorShopLayer();
+  renderMyShopsLocateSearch(modal);
+}
+
+function renderMyShopsLocateSearch(modal, query = "") {
+  modal.innerHTML = `
+    <div class="vshop-head">
+      <div class="vshop-meta" style="flex:1">
+        <h3>Localizar minha loja</h3>
+        <div class="vshop-sub">Pesquise um item que a sua loja está vendendo. Ao abrir as lojas do item, clique em <strong>Monitorar</strong> na sua.</div>
+      </div>
+      <button type="button" class="vshop-close" aria-label="Fechar">×</button>
+    </div>
+    <div class="vshop-body">
+      <div class="home-catalog-field search-accent myshops-locate-field">
+        <svg viewBox="0 0 24 24" class="search-ic" aria-hidden="true"><path d="M21 21l-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="msl-input" type="text" placeholder="Nome ou ID do item que sua loja vende…" autocomplete="off" value="${escapeHtml(query)}" />
+        <button type="button" id="msl-search" class="btn-catalog-go"><span class="btn-catalog-label">Buscar</span></button>
+      </div>
+      <div id="msl-results" class="msl-results"></div>
+    </div>`;
+  bindVendorShopModal(modal);
+  const input = modal.querySelector("#msl-input");
+  const doSearch = () => myShopsLocateSearch(modal, input.value);
+  modal.querySelector("#msl-search").addEventListener("click", doSearch);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doSearch();
+  });
+  input.focus();
+}
+
+async function myShopsLocateSearch(modal, query) {
+  const q = (query || "").trim();
+  const box = modal.querySelector("#msl-results");
+  if (!q || !box) return;
+  box.innerHTML = `<div class="drawer-state"><div class="spinner"></div>Buscando itens…</div>`;
+  try {
+    const res = await window.pywebview.api.search_items(q);
+    if (handleApiAuth(res)) return;
+    if (!res.ok) {
+      box.innerHTML = `<div class="drawer-state err">${escapeHtml(res.error || "Falha na busca.")}</div>`;
+      return;
+    }
+    const items = res.items || [];
+    if (!items.length) {
+      box.innerHTML = `<div class="drawer-state">Nenhum item encontrado para "${escapeHtml(q)}".</div>`;
+      return;
+    }
+    box.innerHTML = items.map((it) => `
+      <div class="msl-item" data-id="${it.id}" data-name="${escapeHtml(it.name)}" title="Ver as lojas que vendem este item">
+        <div class="thumb">${it.icon ? `<img src="${it.icon}" alt="">` : ""}</div>
+        <div class="msl-item-info">
+          <div class="nm">${escapeHtml(it.name)}</div>
+          <div class="meta">ID ${it.id} · ${it.online_stores || 0} loja(s) online</div>
+        </div>
+        <span class="msl-go">ver lojas ›</span>
+      </div>`).join("");
+    box.querySelectorAll(".msl-item").forEach((row) => {
+      row.addEventListener("click", () => myShopsLocateStores(modal, Number(row.dataset.id), row.dataset.name, q));
+    });
+  } catch (err) {
+    box.innerHTML = `<div class="drawer-state err">Erro: ${escapeHtml(String(err))}</div>`;
+  }
+}
+
+async function myShopsLocateStores(modal, itemId, itemName, backQuery) {
+  modal.innerHTML = `
+    <div class="vshop-head">
+      <div class="vshop-meta" style="flex:1">
+        <h3>Lojas vendendo: ${escapeHtml(itemName)}</h3>
+        <div class="vshop-sub">Encontre o seu personagem na lista e clique em <strong>Monitorar</strong>.</div>
+      </div>
+      <button type="button" class="lbtn ghost msl-back">‹ Voltar</button>
+      <button type="button" class="vshop-close" aria-label="Fechar">×</button>
+    </div>
+    <div class="vshop-body"><div id="msl-stores" class="msl-results"><div class="drawer-state"><div class="spinner"></div>Buscando lojas ao vivo…</div></div></div>`;
+  bindVendorShopModal(modal);
+  modal.querySelector(".msl-back").addEventListener("click", () => {
+    renderMyShopsLocateSearch(modal, backQuery);
+    myShopsLocateSearch(modal, backQuery);
+  });
+
+  const box = modal.querySelector("#msl-stores");
+  try {
+    const d = await window.pywebview.api.get_item_detail(itemId);
+    if (handleApiAuth(d)) return;
+    if (!d.ok) {
+      box.innerHTML = `<div class="drawer-state err">${escapeHtml(d.error || "Falha ao carregar lojas.")}</div>`;
+      return;
+    }
+    const stores = (d.stores || []).filter((s) => s.vendor_id);
+    if (!stores.length) {
+      box.innerHTML = `<div class="drawer-state">Nenhuma loja online com este item agora. A sua loja precisa estar aberta (autotrade) para aparecer.</div>`;
+      return;
+    }
+    const monitored = new Set(MYSHOPS.map((s) => Number(s.vendor_id)));
+    box.innerHTML = stores.map((s) => {
+      const cur = CURRENCY[s.currency] || CURRENCY.zeny;
+      const ref = s.refinement > 0 ? `<span class="refine-badge">+${s.refinement}</span> ` : "";
+      const already = monitored.has(Number(s.vendor_id));
+      return `
+        <div class="msl-item msl-store" data-vendor-id="${s.vendor_id}">
+          <div class="msl-item-info">
+            <div class="nm">${ref}${escapeHtml(s.shop)}</div>
+            <div class="meta">${s.quantity > 1 ? `${s.quantity}x · ` : ""}<span style="color:var(--${s.currency})">${cur.fmt(s.price)} ${cur.label}</span></div>
+          </div>
+          <button type="button" class="lbtn ghost msl-view" title="Abrir a loja completa para conferir">Ver loja</button>
+          ${already
+            ? `<span class="ms-status on">Monitorada</span>`
+            : `<button type="button" class="btn-catalog-go msl-monitor"><span class="btn-catalog-label">Monitorar</span></button>`}
+        </div>`;
+    }).join("");
+    box.querySelectorAll(".msl-store").forEach((row) => {
+      const vid = Number(row.dataset.vendorId);
+      row.querySelector(".msl-view")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openVendorShop(vid, "");
+      });
+      row.querySelector(".msl-monitor")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        const ok = await myShopsAddVendor(vid);
+        if (ok) {
+          btn.replaceWith(el("span", "ms-status on", "Monitorada"));
+        } else {
+          btn.disabled = false;
+        }
+      });
+    });
+  } catch (err) {
+    box.innerHTML = `<div class="drawer-state err">Erro: ${escapeHtml(String(err))}</div>`;
+  }
+}
+
 // ── Calculadora de Drop ────────────────────────────────────
 let DROP_BUFF_CATALOG = null;
 let DROP_MAP_LIST = null;
@@ -4092,6 +4674,13 @@ function fmtDropBonusPct(v) {
   return n % 1 === 0 ? String(n) : n.toFixed(1);
 }
 
+/** Badge de nível (reputação/Ascensão); inclui Drop Final quando houver. */
+function dropTierBadgeText(tier) {
+  if (!tier) return "+0%";
+  const fin = Number(tier.final_drop_pct || 0);
+  return `+${tier.bonus_pct}%` + (fin ? ` · +${fmtDropBonusPct(fin)}% final` : "");
+}
+
 function dropBuffOn(buffId) {
   return !!DROP_STATE.buffs?.[buffId];
 }
@@ -4177,7 +4766,8 @@ function updateDropTotalDisplay(bonusRes) {
   if (!el) return;
   const eff = Number(bonusRes?.bonus_effective_pct || 0);
   const raw = Number(bonusRes?.bonus_raw_pct || 0);
-  el.textContent = `+${eff % 1 ? eff.toFixed(1) : eff}%`;
+  const fin = Number(bonusRes?.final_drop_pct || 0);
+  el.textContent = `+${eff % 1 ? eff.toFixed(1) : eff}%` + (fin ? ` · +${fmtDropBonusPct(fin)}% final` : "");
   if (capEl) {
     if (bonusRes?.capped) {
       capEl.hidden = false;
@@ -4214,7 +4804,7 @@ function dropBuffCardHtml(buff, groupId) {
     const lv = dropRepLevel(track);
     active = lv > 0;
     const tier = (buff.tiers || []).find((t) => Number(t.level) === lv);
-    badge = tier ? `+${tier.bonus_pct}%` : "+0%";
+    badge = dropTierBadgeText(tier);
     extraAttrs = 'data-tier="1"';
     tierSelect = `
     <select class="drop-tier-select" data-track="${escapeHtml(track)}" aria-label="Nível ${escapeHtml(buff.nome)}">
@@ -4289,7 +4879,7 @@ function bindDropBuffCards(root) {
         .find((b) => b.tier_track === track);
       const trow = (tier?.tiers || []).find((t) => Number(t.level) === Number(sel.value));
       const badge = card?.querySelector(".drop-buff-badge");
-      if (badge && trow) badge.textContent = `+${trow.bonus_pct}%`;
+      if (badge && trow) badge.textContent = dropTierBadgeText(trow);
       _dropBonusCache = { key: "", res: null };
       scheduleDropStateSave();
       refreshDropBonusSummary();
@@ -4491,6 +5081,7 @@ function dropPctFmt(v) {
 
 function dropFinalTitle(calc, row) {
   const parts = [];
+  if (Number(calc?.final_drop_pct || 0)) parts.push(`Drop Final +${fmtDropBonusPct(calc.final_drop_pct)}%`);
   if (calc?.capped && row?.contexto) parts.push(`CAP bônus ${calc.cap_pct}% (${row.contexto})`);
   if (calc?.item_capped && calc?.item_chance_cap_pct != null) {
     parts.push(`CAP item ${calc.item_chance_cap_pct}%`);

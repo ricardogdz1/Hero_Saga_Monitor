@@ -94,3 +94,34 @@ class TestComputeEffectiveBonus:
         if com_rep["bonus_raw_pct"] > 0:
             rep_part = next(p for p in com_rep["parts"] if p["kind"] == "reputation")
             assert rep_part["level"] == 3
+
+
+class TestPetGradesNovas:
+    def test_grades_r_s_ss(self):
+        # R/S/SS: +200/+250/+300% sobre o bônus do pet
+        assert compute_pet_effective_bonus(10, 5) == 30.0
+        assert compute_pet_effective_bonus(10, 6) == 35.0
+        assert compute_pet_effective_bonus(10, 7) == 40.0
+
+    def test_grades_antigas_inalteradas(self):
+        assert compute_pet_effective_bonus(10, 4) == 25.0
+
+
+class TestAscensao:
+    def test_nivel_15_sem_drop_final(self):
+        r = compute_effective_bonus({}, rep_levels={"ascensao": 15})
+        assert r["bonus_raw_pct"] == 60
+        assert r["final_drop_pct"] == 0
+
+    def test_niveis_16_a_20_so_dao_drop_final(self):
+        for lv in range(16, 21):
+            r = compute_effective_bonus({}, rep_levels={"ascensao": lv})
+            assert r["bonus_raw_pct"] == 60
+            assert r["final_drop_pct"] == lv - 15
+
+    def test_drop_final_multiplica_depois_dos_bonus(self):
+        # 1% * (1 + 60%) * (1 + 5%) = 1.68%
+        assert compute_final_chance(1, 60, final_drop_pct=5) == 1.68
+
+    def test_sem_drop_final_nao_muda_nada(self):
+        assert compute_final_chance(10, 50, final_drop_pct=0) == 15.0

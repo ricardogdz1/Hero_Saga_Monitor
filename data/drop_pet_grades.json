@@ -1,7 +1,7 @@
 {
   "pet_grade": {
     "nome": "Grade do Pet",
-    "max_level": 4,
+    "max_level": 7,
     "levels": [
       {
         "level": 0,
@@ -32,6 +32,24 @@
         "grade": "A",
         "multiplier_pct": 150,
         "label": "Grade A (+150% sobre o pet)"
+      },
+      {
+        "level": 5,
+        "grade": "R",
+        "multiplier_pct": 200,
+        "label": "Grade R (+200% sobre o pet)"
+      },
+      {
+        "level": 6,
+        "grade": "S",
+        "multiplier_pct": 250,
+        "label": "Grade S (+250% sobre o pet)"
+      },
+      {
+        "level": 7,
+        "grade": "SS",
+        "multiplier_pct": 300,
+        "label": "Grade SS (+300% sobre o pet)"
       }
     ]
   }
