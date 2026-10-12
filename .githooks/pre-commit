@@ -1,0 +1,22 @@
+#!/bin/sh
+# Gate de QA: bloqueia o commit se a suíte (unitários + tests/qa) falhar.
+# Ativar uma vez por clone:  git config core.hooksPath .githooks
+# Emergência (não recomendado):  git commit --no-verify
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+if [ -x ".venv/Scripts/python.exe" ]; then
+  PY=".venv/Scripts/python.exe"
+elif [ -x ".venv/bin/python" ]; then
+  PY=".venv/bin/python"
+else
+  PY="python"
+fi
+
+echo "[QA] rodando pytest (unitários + tests/qa)..."
+if ! "$PY" -m pytest -q -p no:cacheprovider; then
+  echo ""
+  echo "[QA] FALHOU — commit bloqueado. Corrija os testes acima antes de commitar."
+  exit 1
+fi
+echo "[QA] OK"

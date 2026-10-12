@@ -54,8 +54,10 @@ class TestParseSaleDatetime:
 
 class TestMergeSalesHistory:
     def test_deduplica_e_ordena_mais_recente_primeiro(self):
-        antiga = venda("2026-07-01 10:00:00", 50)
-        nova = venda("2026-07-05 10:00:00", 80)
+        # datas relativas a now(): merge aplica a retenção de 30d sobre o relógio real
+        agora = datetime.now()
+        antiga = venda((agora - timedelta(days=5)).strftime("%Y-%m-%d %H:%M:%S"), 50)
+        nova = venda((agora - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"), 80)
         resultado = merge_sales_history([antiga], [nova, dict(antiga)])
         assert len(resultado) == 2
         assert resultado[0]["price"] == 80.0  # mais recente primeiro
